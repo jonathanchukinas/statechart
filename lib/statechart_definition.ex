@@ -35,9 +35,21 @@ defmodule Statechart.Definition do
     old_nodes_addend = 2 * length(new_nodes)
     new_nodes_addend = parent_rgt
 
-    # TODO I don't like having this logic in the Node
+    maybe_update_old_lft = fn
+      %Node{lft: lft} = node when lft >= parent_rgt -> Node.add_to_lft(node, old_nodes_addend)
+      node -> node
+    end
+
+    maybe_update_old_rgt = fn
+      %Node{rgt: rgt} = node when rgt >= parent_rgt -> Node.add_to_rgt(node, old_nodes_addend)
+      node -> node
+    end
+
     prepared_old_nodes =
-      tree |> nodes |> Enum.map(&Node.maybe_update_position(&1, parent_rgt, old_nodes_addend))
+      tree
+      |> nodes
+      |> Stream.map(maybe_update_old_lft)
+      |> Stream.map(maybe_update_old_rgt)
 
     prepared_new_nodes =
       new_nodes

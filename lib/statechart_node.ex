@@ -30,19 +30,12 @@ defmodule Statechart.Node do
   #####################################
   # REDUCERS
 
-  @doc """
-  Used when inserted other nodes into a tree.
+  def add_to_lft(%__MODULE__{lft: lft} = node, addend) do
+    %__MODULE__{node | lft: lft + addend}
+  end
 
-  Should only be used by `Statechart`
-  """
-  def maybe_update_position(%__MODULE__{} = node, min_value, addend) do
-    Enum.reduce([:lft, :rgt], node, fn key, node ->
-      if Map.fetch!(node, key) >= min_value do
-        Map.update!(node, key, &(&1 + addend))
-      else
-        node
-      end
-    end)
+  def add_to_rgt(%__MODULE__{rgt: rgt} = node, addend) do
+    %__MODULE__{node | rgt: rgt + addend}
   end
 
   def add_to_lft_rgt(%__MODULE__{lft: lft, rgt: rgt} = node, addend) do
@@ -55,17 +48,6 @@ defmodule Statechart.Node do
 
   #####################################
   # CONVERTERS
-
-  # TODO remove?
-  def in_path?(
-        %__MODULE__{lft: lft, rgt: rgt} = _maybe_ancestor_node,
-        %__MODULE__{lft: desc_lft, rgt: desc_rgt} = _descendent_node
-      )
-      when (lft < desc_lft and desc_rgt < rgt) or
-             (lft == desc_lft and desc_rgt == rgt),
-      do: true
-
-  def in_path?(_non_ancestor_node, _descendent_node), do: false
 
   @spec match?(t, fetch_spec) :: boolean
   def match?(node, fetch_spec)

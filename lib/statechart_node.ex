@@ -60,6 +60,11 @@ defmodule Statechart.Node do
   @spec lft_rgt(t) :: {integer, integer}
   def lft_rgt(%__MODULE__{lft: lft, rgt: rgt}), do: {lft, rgt}
 
+  @spec check_id(t, id) :: :ok | {:error, :no_id_match}
+  def check_id(node, id) do
+    if id(node) == id, do: :ok, else: {:error, :no_id_match}
+  end
+
   #####################################
   # IMPLEMENTATIONS
 

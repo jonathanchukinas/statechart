@@ -32,22 +32,33 @@ defmodule StatechartTest do
       end)
     end
 
+    tree_generator = map(nodes_with_parent_ids_generator, build_tree)
+
+    tree_and_node_parent_id_list_generator =
+      map(nodes_with_parent_ids_generator, fn nodes_and_parent_ids ->
+        %{
+          tree: build_tree.(nodes_and_parent_ids),
+          nodes_and_parent_ids: nodes_and_parent_ids
+        }
+      end)
+
     [
-      tree_generator: map(nodes_with_parent_ids_generator, build_tree)
+      tree_generator: tree_generator,
+      tree_and_orig_inputs: tree_and_node_parent_id_list_generator
     ]
   end
 
-  property "Nodes are stored in ascending lft order", %{tree_generator: generator} do
-    check all(tree <- generator) do
+  property "Nodes are stored in ascending lft order", %{tree_generator: tree_generator} do
+    check all(tree <- tree_generator) do
       node_lft_values = Definition.nodes(tree, mapper: &Node.lft/1)
       assert node_lft_values == Enum.sort(node_lft_values)
     end
   end
 
   property "Node lft and rgt values are uniq and the sets don't overlap ", %{
-    tree_generator: generator
+    tree_generator: tree_generator
   } do
-    check all(tree <- generator) do
+    check all(tree <- tree_generator) do
       sorted_node_lft_values = Definition.nodes(tree, mapper: &Node.lft/1) |> Enum.sort()
       assert sorted_node_lft_values == Enum.uniq(sorted_node_lft_values)
 
@@ -59,19 +70,50 @@ defmodule StatechartTest do
     end
   end
 
-  property "Node ids are unique", %{tree_generator: generator} do
-    check all(tree <- generator) do
+  property "Node ids are unique", %{tree_generator: tree_generator} do
+    check all(tree <- tree_generator) do
       sorted_node_ids = Definition.nodes(tree, mapper: &Node.id/1) |> Enum.sort()
       assert sorted_node_ids == Enum.uniq(sorted_node_ids)
     end
   end
 
-  property "We can calculate node count using root's lft/rgt", %{tree_generator: generator} do
-    check all(tree <- generator) do
+  property "We can calculate node count using root's lft/rgt", %{tree_generator: tree_generator} do
+    check all(tree <- tree_generator) do
       {lft, rgt} = tree |> Definition.root() |> Node.lft_rgt()
       expected_node_count = (rgt + 1 - lft) / 2
       assert expected_node_count == length(Definition.nodes(tree))
       assert expected_node_count == Definition.node_count(tree)
+    end
+  end
+
+  property "Once inserted, a node's parent never changes", %{tree_and_orig_inputs: generator} do
+    check all(
+            %{
+              tree: statechart_def,
+              nodes_and_parent_ids: nodes_and_parent_ids
+            } <- generator
+          ) do
+      input_names_grouped_by_parent_id =
+        Enum.group_by(
+          nodes_and_parent_ids,
+          fn {_child, parent_id} -> parent_id end,
+          fn {child, _parent_id} -> Node.name(child) end
+        )
+
+      Enum.each(input_names_grouped_by_parent_id, fn {parent_id, child_names} ->
+        expected_child_names = Enum.sort(child_names)
+
+        actual_child_names =
+          statechart_def
+          |> Definition.fetch_children_by_id!(parent_id)
+          |> Stream.map(&Node.name/1)
+          |> Enum.sort()
+
+        message =
+          "expected parent node (id: #{parent_id}) to have children with names #{inspect(expected_child_names)}, got: #{inspect(actual_child_names)}"
+
+        assert actual_child_names == expected_child_names, message
+      end)
     end
   end
 end

@@ -13,6 +13,7 @@ defmodule Statechart.Definition do
   #####################################
   # CONSTRUCTORS
 
+  @spec new() :: t
   def new do
     %__MODULE__{nodes: [Node.root()]}
   end
@@ -20,7 +21,7 @@ defmodule Statechart.Definition do
   #####################################
   # REDUCERS
 
-  @spec insert(t, Insertable.t(), Node.id()) :: {:ok, t} | {:error, atom}
+  @spec insert(t, Insertable.t(), Node.id()) :: {:ok, t} | {:error, :id_not_found}
   def insert(%__MODULE__{} = statechart_def, insertable, parent_id) do
     new_nodes = Insertable.nodes(insertable)
 
@@ -74,12 +75,13 @@ defmodule Statechart.Definition do
   #####################################
   # CONVERTERS
 
+  @spec contains_id?(t, Node.id()) :: boolean
   def contains_id?(statechart_def, id), do: id in 1..max_node_id(statechart_def)
 
   @spec fetch_ancestors_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
   def fetch_ancestors_by_id(statechart_def, parent_id) do
     statechart_def
-    |> stream_nodes_starting_at_node_id(parent_id)
+    |> nodes_starting_at_node_id(parent_id)
     |> Enum.to_list()
     |> case do
       [] ->
@@ -124,19 +126,27 @@ defmodule Statechart.Definition do
     end
   end
 
-  # TODO rename to get_path_of?
-  @spec get_path(t, Node.t() | Node.fetch_spec(), (Node.t() -> term)) :: [term]
-  # TODO replace this default with nil
-  def get_path(statechart_def, node, mapper \\ fn node -> node end)
-
-  def get_path(%__MODULE__{} = statechart_def, %Node{} = node, mapper) do
+  @spec fetch_node_by_id(t, Node.id()) :: {:ok, Node.t()} | {:error, :id_not_found}
+  def fetch_node_by_id(statechart_def, id) do
     statechart_def
     |> nodes
-    |> Stream.take_while(fn %Node{lft: lft} -> lft <= node.lft end)
-    |> Stream.filter(fn %Node{rgt: rgt} -> node.rgt <= rgt end)
-    |> Enum.map(mapper)
+    |> Enum.find(error_id_not_found(), &(Node.id(&1) == id))
+    |> case do
+      %Node{} = node -> {:ok, node}
+      {:error, _type} = error -> error
+    end
   end
 
+  @spec fetch_node_by_id!(t, Node.id()) :: Node.t()
+  def fetch_node_by_id!(statechart_def, id) do
+    case fetch_node_by_id(statechart_def, id) do
+      {:ok, node} -> node
+      error -> raise error_msg(error, statechart_def, id)
+    end
+  end
+
+  @spec fetch_parent_by_id(t, Node.id()) ::
+          {:ok, Node.t()} | {:error, :id_not_found} | {:error, :no_parent}
   def fetch_parent_by_id(statechart_def, child_id) do
     with {:ok, path} <- fetch_path_by_id(statechart_def, child_id),
          %Node{} = node <- Enum.at(path, -2, error_no_parent()) do
@@ -157,21 +167,8 @@ defmodule Statechart.Definition do
     end
   end
 
-  @spec fetch_node_by_id(t, Node.id()) :: {:ok, Node.t()} | {:error, :id_not_found}
-  def fetch_node_by_id(statechart_def, id) do
-    statechart_def
-    |> nodes
-    |> Enum.find(:not_found, &(Node.id(&1) == id))
-    |> case do
-      %Node{} = node -> {:ok, node}
-      :not_found -> error_id_not_found()
-    end
-  end
-
-  def fetch_node_by_id!(statechart_def, id) do
-    {:ok, node} = fetch_node_by_id(statechart_def, {:id, id})
-    node
-  end
+  @spec max_node_id(t) :: Node.id()
+  defdelegate max_node_id(statechart_def), to: __MODULE__, as: :node_count
 
   def nodes(statechart_def, opts) do
     nodes = nodes(statechart_def)
@@ -182,16 +179,17 @@ defmodule Statechart.Definition do
     end
   end
 
+  @spec node_count(t) :: pos_integer
+  def node_count(statechart_def) do
+    {lft, rgt} = statechart_def |> root() |> Node.lft_rgt()
+    count = (rgt + 1 - lft) / 2
+    round(count)
+  end
+
+  @spec root(t) :: Node.t()
   def root(statechart_def) do
     statechart_def |> nodes |> hd
   end
-
-  def node_count(statechart_def) do
-    {lft, rgt} = statechart_def |> root() |> Node.lft_rgt()
-    (rgt + 1 - lft) / 2
-  end
-
-  def max_node_id(statechart_def), do: statechart_def |> nodes(mapper: &Node.id/1) |> Enum.max()
 
   #####################################
   # CONVERTERS (private)
@@ -200,20 +198,21 @@ defmodule Statechart.Definition do
   defp fetch_path_by_id(statechart_def, id) do
     [terminator | rest] =
       statechart_def
-      |> stream_nodes_up_to_and_incl_node_id(id)
+      |> nodes_up_to_and_incl_node_id(id)
       |> Enum.reverse()
 
-    with :ok <- Node.check_id(terminator, id),
+    with :ok <- check_id(terminator, id),
          {lft, rgt} <- Node.lft_rgt(terminator) do
       parent_nodes = for node <- rest, Node.lft(node) < lft, rgt < Node.rgt(node), do: node
       path = Enum.reverse([terminator | parent_nodes])
       {:ok, path}
     else
-      {:error, :no_id_match} -> error_id_not_found()
+      {:error, _type} = error -> error
     end
   end
 
-  defp stream_nodes_up_to_and_incl_node_id(statechart_def, id) do
+  @spec nodes_up_to_and_incl_node_id(t, Node.id()) :: Enumerable.t()
+  defp nodes_up_to_and_incl_node_id(statechart_def, id) do
     statechart_def
     |> nodes
     |> Stream.chunk_by(fn node -> Node.id(node) == id end)
@@ -221,7 +220,8 @@ defmodule Statechart.Definition do
     |> Stream.concat()
   end
 
-  defp stream_nodes_starting_at_node_id(statechart_def, id) do
+  @spec nodes_starting_at_node_id(t, Node.id()) :: Enumerable.t()
+  defp nodes_starting_at_node_id(statechart_def, id) do
     statechart_def
     |> nodes
     |> Stream.drop_while(fn node -> Node.id(node) != id end)
@@ -230,10 +230,16 @@ defmodule Statechart.Definition do
   #####################################
   # HELPERS
 
+  @spec check_id(Node.t(), Node.id()) :: :ok | {:error, :id_not_found}
+  defp check_id(node, id) do
+    if Node.id(node) == id, do: :ok, else: error_id_not_found()
+  end
+
   # TODO use this elsewhere
   defp error_id_not_found, do: {:error, :id_not_found}
   defp error_no_parent, do: {:error, :no_parent}
 
+  @spec error_msg({:error, atom}, t, Node.id()) :: String.t()
   defp error_msg({:error, error_type}, statechart_def, id) do
     case error_type do
       :id_not_found ->

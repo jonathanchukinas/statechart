@@ -20,43 +20,55 @@ defmodule Statechart.Definition do
   #####################################
   # REDUCERS
 
+  @spec insert(t, Insertable.t(), Node.id()) :: {:ok, t} | {:error, atom}
+  def insert(%__MODULE__{} = statechart_def, insertable, parent_id) do
+    new_nodes = Insertable.nodes(insertable)
+
+    with {:ok, parent} <- fetch_node_by_id(statechart_def, parent_id) do
+      parent_rgt = Node.rgt(parent)
+
+      starting_new_id = 1 + max_node_id(statechart_def)
+
+      old_nodes_addend = 2 * length(new_nodes)
+      new_nodes_addend = parent_rgt
+
+      maybe_update_old_node = fn %Node{} = node, key ->
+        Node.update_if(node, key, &(&1 >= parent_rgt), &(&1 + old_nodes_addend))
+      end
+
+      prepared_old_nodes =
+        statechart_def
+        |> nodes
+        |> Stream.map(&maybe_update_old_node.(&1, :lft))
+        |> Stream.map(&maybe_update_old_node.(&1, :rgt))
+
+      prepared_new_nodes =
+        new_nodes
+        |> Stream.map(&Node.add_to_lft_rgt(&1, new_nodes_addend))
+        |> Enum.with_index(fn node, index -> Node.set_id(node, index + starting_new_id) end)
+
+      nodes =
+        [prepared_old_nodes, prepared_new_nodes]
+        |> Stream.concat()
+        |> Enum.sort_by(&Node.lft/1)
+
+      statechart_def = %__MODULE__{statechart_def | nodes: nodes}
+      {:ok, statechart_def}
+    else
+      {:error, _type} = error -> error
+    end
+  end
+
   # TODO this needs a boundary, which checks for:
-  #   unique names
-  #   existing parent_id
   #   insertable needs to valid
   #     node: lft = 0, rgt  = 1
   #     id: 0?
-  # TODO there should be a "fetch" version of this that returns an ok tuple
   @spec insert!(t, Insertable.t(), Node.id()) :: t
   def insert!(%__MODULE__{} = statechart_def, insertable, parent_id) do
-    new_nodes = Insertable.nodes(insertable)
-    parent_rgt = statechart_def |> fetch_node_by_id!(parent_id) |> Node.rgt()
-    starting_new_id = 1 + max_node_id(statechart_def)
-
-    old_nodes_addend = 2 * length(new_nodes)
-    new_nodes_addend = parent_rgt
-
-    maybe_update_old_node = fn %Node{} = node, key ->
-      Node.update_if(node, key, &(&1 >= parent_rgt), &(&1 + old_nodes_addend))
+    case insert(statechart_def, insertable, parent_id) do
+      {:ok, node} -> node
+      error -> raise error_msg(error, statechart_def, parent_id)
     end
-
-    prepared_old_nodes =
-      statechart_def
-      |> nodes
-      |> Stream.map(&maybe_update_old_node.(&1, :lft))
-      |> Stream.map(&maybe_update_old_node.(&1, :rgt))
-
-    prepared_new_nodes =
-      new_nodes
-      |> Stream.map(&Node.add_to_lft_rgt(&1, new_nodes_addend))
-      |> Enum.with_index(fn node, index -> Node.set_id(node, index + starting_new_id) end)
-
-    nodes =
-      [prepared_old_nodes, prepared_new_nodes]
-      |> Stream.concat()
-      |> Enum.sort_by(&Node.lft/1)
-
-    %__MODULE__{statechart_def | nodes: nodes}
   end
 
   #####################################
@@ -145,16 +157,20 @@ defmodule Statechart.Definition do
     end
   end
 
-  def fetch_node_by_id!(statechart_def, id) do
-    {:ok, node} = fetch(statechart_def, {:id, id})
-    node
+  @spec fetch_node_by_id(t, Node.id()) :: {:ok, Node.t()} | {:error, :id_not_found}
+  def fetch_node_by_id(statechart_def, id) do
+    statechart_def
+    |> nodes
+    |> Enum.find(:not_found, &(Node.id(&1) == id))
+    |> case do
+      %Node{} = node -> {:ok, node}
+      :not_found -> error_id_not_found()
+    end
   end
 
-  def fetch(%__MODULE__{nodes: nodes}, fetch_spec) do
-    case Enum.find(nodes, &Node.match?(&1, fetch_spec)) do
-      nil -> :error
-      %Node{} = node -> {:ok, node}
-    end
+  def fetch_node_by_id!(statechart_def, id) do
+    {:ok, node} = fetch_node_by_id(statechart_def, {:id, id})
+    node
   end
 
   def nodes(statechart_def, opts) do

@@ -28,7 +28,8 @@ defmodule StatechartTest do
 
     build_tree = fn nodes_and_parent_ids ->
       Enum.reduce(nodes_and_parent_ids, empty_tree, fn {node, parent_id}, tree ->
-        Definition.insert!(tree, node, parent_id)
+        {:ok, statechart_def} = Definition.insert(tree, node, parent_id)
+        statechart_def
       end)
     end
 

@@ -6,17 +6,17 @@ defmodule Statechart.Definition do
   #####################################
   # TYPES
 
+  @starting_node_id 1
+
   getter_struct do
-    field(:nodes, [Node.t()], default: [])
+    field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]
   end
 
   #####################################
   # CONSTRUCTORS
 
   @spec new() :: t
-  def new do
-    %__MODULE__{nodes: [Node.root()]}
-  end
+  def new, do: %__MODULE__{}
 
   #####################################
   # REDUCERS
@@ -62,7 +62,6 @@ defmodule Statechart.Definition do
 
   # TODO this needs a boundary, which checks for:
   #   insertable needs to valid
-  #     node: lft = 0, rgt  = 1
   #     id: 0?
   @spec insert!(t, Insertable.t(), Node.id()) :: t
   def insert!(%__MODULE__{} = statechart_def, insertable, parent_id) do
@@ -168,7 +167,9 @@ defmodule Statechart.Definition do
   end
 
   @spec max_node_id(t) :: Node.id()
-  defdelegate max_node_id(statechart_def), to: __MODULE__, as: :node_count
+  def max_node_id(statechart_def) do
+    @starting_node_id - 1 + node_count(statechart_def)
+  end
 
   def nodes(statechart_def, opts) do
     nodes = nodes(statechart_def)
@@ -235,7 +236,6 @@ defmodule Statechart.Definition do
     if Node.id(node) == id, do: :ok, else: error_id_not_found()
   end
 
-  # TODO use this elsewhere
   defp error_id_not_found, do: {:error, :id_not_found}
   defp error_no_parent, do: {:error, :no_parent}
 

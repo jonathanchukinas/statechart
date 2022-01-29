@@ -1,17 +1,20 @@
-defprotocol Statechart.Insertable do
-  alias Statechart.Node
+alias Statechart.Node
+alias Statechart.Definition
 
+defprotocol Statechart.Insertable do
   #####################################
   # TYPES
 
-  @spec nodes(t) :: [Node.t()]
+  @spec nodes(t) :: [Node.maybe_not_inserted()]
   def nodes(insertable)
 end
 
-defimpl Statechart.Insertable, for: Statechart.Node do
+defimpl Statechart.Insertable, for: Node do
+  @spec nodes(Node.not_inserted()) :: [Node.not_inserted()]
   def nodes(node), do: [node]
 end
 
-defimpl Statechart.Insertable, for: Statechart.Definition do
-  defdelegate nodes(definition), to: Statechart.Definition
+defimpl Statechart.Insertable, for: Definition do
+  @spec nodes(Definition.t()) :: [Node.t()]
+  defdelegate nodes(definition), to: Definition
 end

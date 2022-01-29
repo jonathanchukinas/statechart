@@ -2,34 +2,39 @@ defmodule Statechart.Node do
   use Statechart.Util.GetterStruct
 
   @type id :: pos_integer
-  @type lft_or_rgt :: non_neg_integer
 
-  # TODO this doesn't belong here.
-  @type fetch_spec ::
-          {:lft, lft_or_rgt()}
-          | {:id, id()}
-          | {:name, atom}
-  @type node_or_fetch_spec :: t | fetch_spec
-
-  getter_struct enforce: false do
-    field :id, id
-    field :name, atom, enforce: true
-    field :lft, lft_or_rgt, default: 0
-    field :rgt, lft_or_rgt, default: 1
+  getter_struct do
+    field :id, id, default: 0
+    field :name, atom
+    field :lft, non_neg_integer, default: 0
+    field :rgt, pos_integer, default: 1
   end
+
+  @type not_inserted ::
+          %__MODULE__{
+            id: 0 | id,
+            name: atom,
+            lft: non_neg_integer,
+            rgt: pos_integer
+          }
+
+  @type maybe_not_inserted :: t | not_inserted
 
   #####################################
   # CONSTRUCTORS
 
-  def root() do
-    %__MODULE__{id: 1, name: :root}
+  @spec root(id) :: t
+  def root(id) do
+    %__MODULE__{id: id, name: :root}
   end
 
+  @spec new(atom) :: not_inserted
   def new(name) when is_atom(name), do: %__MODULE__{name: name}
 
   #####################################
   # REDUCERS
 
+  # TODO review typespecs
   @spec update_if(t, :id | :lft | :rgt, (t -> boolean), (integer -> integer)) :: t
   def update_if(%__MODULE__{} = node, key, if_fn, update_fn) do
     if node |> Map.fetch!(key) |> if_fn.() do
@@ -50,20 +55,8 @@ defmodule Statechart.Node do
   #####################################
   # CONVERTERS
 
-  @spec match?(t, fetch_spec) :: boolean
-  def match?(node, fetch_spec)
-  def match?(%__MODULE__{id: value}, {:id, value}), do: true
-  def match?(%__MODULE__{name: value}, {:name, value}), do: true
-  def match?(%__MODULE__{lft: value}, {:lft, value}), do: true
-  def match?(_, _), do: false
-
   @spec lft_rgt(t) :: {integer, integer}
   def lft_rgt(%__MODULE__{lft: lft, rgt: rgt}), do: {lft, rgt}
-
-  @spec check_id(t, id) :: :ok | {:error, :no_id_match}
-  def check_id(node, id) do
-    if id(node) == id, do: :ok, else: {:error, :no_id_match}
-  end
 
   #####################################
   # IMPLEMENTATIONS

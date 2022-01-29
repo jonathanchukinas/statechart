@@ -2,9 +2,6 @@ alias Statechart.Node
 alias Statechart.Definition
 
 defprotocol Statechart.Insertable do
-  #####################################
-  # TYPES
-
   @spec nodes(t) :: [Node.maybe_not_inserted()]
   def nodes(insertable)
 end

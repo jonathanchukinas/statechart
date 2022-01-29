@@ -3,6 +3,7 @@ defmodule StatechartTest do
   use ExUnitProperties
   alias Statechart.Node
   alias Statechart.Definition
+  alias Statechart.Tree
 
   # properties:
   #   when inserted a node, I know its parent id (b/c I randomly picked it)
@@ -13,8 +14,8 @@ defmodule StatechartTest do
 
   setup_all do
     empty_tree = Definition.new()
-    starting_max_parent_id = Definition.max_node_id(empty_tree)
-    min_possible_parent_id = empty_tree |> Definition.nodes(mapper: &Node.id/1) |> Enum.min()
+    starting_max_parent_id = Tree.max_node_id(empty_tree)
+    min_possible_parent_id = empty_tree |> Tree.nodes(mapper: &Node.id/1) |> Enum.min()
 
     # :: [{Node.t(), integer}]
     nodes_with_parent_ids_generator =
@@ -28,7 +29,7 @@ defmodule StatechartTest do
 
     build_tree = fn nodes_and_parent_ids ->
       Enum.reduce(nodes_and_parent_ids, empty_tree, fn {node, parent_id}, tree ->
-        {:ok, statechart_def} = Definition.insert(tree, node, parent_id)
+        {:ok, statechart_def} = Tree.insert(tree, node, parent_id)
         statechart_def
       end)
     end
@@ -51,7 +52,8 @@ defmodule StatechartTest do
 
   property "Nodes are stored in ascending lft order", %{tree_generator: tree_generator} do
     check all(tree <- tree_generator) do
-      node_lft_values = Definition.nodes(tree, mapper: &Node.lft/1)
+      # TODO get rid of "mapper"
+      node_lft_values = tree |> Tree.fetch_nodes!() |> Enum.map(&Node.lft/1)
       assert node_lft_values == Enum.sort(node_lft_values)
     end
   end
@@ -60,10 +62,14 @@ defmodule StatechartTest do
     tree_generator: tree_generator
   } do
     check all(tree <- tree_generator) do
-      sorted_node_lft_values = Definition.nodes(tree, mapper: &Node.lft/1) |> Enum.sort()
+      sorted_node_lft_values =
+        tree |> Tree.fetch_nodes!() |> Stream.map(&Node.lft/1) |> Enum.sort()
+
       assert sorted_node_lft_values == Enum.uniq(sorted_node_lft_values)
 
-      sorted_node_rgt_values = Definition.nodes(tree, mapper: &Node.rgt/1) |> Enum.sort()
+      sorted_node_rgt_values =
+        tree |> Tree.fetch_nodes!() |> Stream.map(&Node.rgt/1) |> Enum.sort()
+
       assert sorted_node_rgt_values == Enum.uniq(sorted_node_rgt_values)
 
       sorted_lft_and_rgt = Enum.sort(sorted_node_lft_values ++ sorted_node_rgt_values)
@@ -73,17 +79,18 @@ defmodule StatechartTest do
 
   property "Node ids are unique", %{tree_generator: tree_generator} do
     check all(tree <- tree_generator) do
-      sorted_node_ids = Definition.nodes(tree, mapper: &Node.id/1) |> Enum.sort()
+      sorted_node_ids = tree |> Tree.fetch_nodes!() |> Stream.map(&Node.id/1) |> Enum.sort()
+
       assert sorted_node_ids == Enum.uniq(sorted_node_ids)
     end
   end
 
   property "We can calculate node count using root's lft/rgt", %{tree_generator: tree_generator} do
     check all(tree <- tree_generator) do
-      {lft, rgt} = tree |> Definition.root() |> Node.lft_rgt()
+      {lft, rgt} = tree |> Tree.root() |> Node.lft_rgt()
       expected_node_count = (rgt + 1 - lft) / 2
-      assert expected_node_count == length(Definition.nodes(tree))
-      assert expected_node_count == Definition.node_count(tree)
+      assert expected_node_count == length(Tree.fetch_nodes!(tree))
+      assert expected_node_count == Tree.node_count(tree)
     end
   end
 
@@ -106,7 +113,7 @@ defmodule StatechartTest do
 
         actual_child_names =
           statechart_def
-          |> Definition.fetch_children_by_id!(parent_id)
+          |> Tree.fetch_children_by_id!(parent_id)
           |> Stream.map(&Node.name/1)
           |> Enum.sort()
 

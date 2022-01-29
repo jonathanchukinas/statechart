@@ -3,6 +3,8 @@ defmodule Statechart.Node do
 
   @type id :: pos_integer
   @type lft_or_rgt :: non_neg_integer
+
+  # TODO this doesn't belong here.
   @type fetch_spec ::
           {:lft, lft_or_rgt()}
           | {:id, id()}
@@ -10,23 +12,17 @@ defmodule Statechart.Node do
   @type node_or_fetch_spec :: t | fetch_spec
 
   getter_struct enforce: false do
-    field(:id, id)
-    field(:name, atom, enforce: true)
-    field(:lft, lft_or_rgt)
-
-    field(:rgt, lft_or_rgt)
+    field :id, id
+    field :name, atom, enforce: true
+    field :lft, lft_or_rgt, default: 0
+    field :rgt, lft_or_rgt, default: 1
   end
 
   #####################################
   # CONSTRUCTORS
 
   def root() do
-    %__MODULE__{
-      id: 1,
-      name: :root,
-      lft: 0,
-      rgt: 1
-    }
+    %__MODULE__{id: 1, name: :root}
   end
 
   def new(name) when is_atom(name), do: %__MODULE__{name: name}
@@ -47,6 +43,14 @@ defmodule Statechart.Node do
         node
       end
     end)
+  end
+
+  def add_to_lft_rgt(%__MODULE__{lft: lft, rgt: rgt} = node, addend) do
+    %__MODULE__{node | lft: lft + addend, rgt: rgt + addend}
+  end
+
+  def set_id(node, id) do
+    %__MODULE__{node | id: id}
   end
 
   #####################################

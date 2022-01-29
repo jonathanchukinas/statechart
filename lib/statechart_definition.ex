@@ -28,10 +28,10 @@ defmodule Statechart.Definition do
   #     id: 0?
   # TODO there should be a "fetch" version of this that returns an ok tuple
   @spec insert!(t, Insertable.t(), Node.id()) :: t
-  def insert!(%__MODULE__{} = tree, insertable, parent_id) do
+  def insert!(%__MODULE__{} = statechart_def, insertable, parent_id) do
     new_nodes = Insertable.nodes(insertable)
-    parent_rgt = tree |> fetch_node_by_id!(parent_id) |> Node.rgt()
-    starting_new_id = 1 + max_node_id(tree)
+    parent_rgt = statechart_def |> fetch_node_by_id!(parent_id) |> Node.rgt()
+    starting_new_id = 1 + max_node_id(statechart_def)
 
     old_nodes_addend = 2 * length(new_nodes)
     new_nodes_addend = parent_rgt
@@ -41,7 +41,7 @@ defmodule Statechart.Definition do
     end
 
     prepared_old_nodes =
-      tree
+      statechart_def
       |> nodes
       |> Stream.map(&maybe_update_old_node.(&1, :lft))
       |> Stream.map(&maybe_update_old_node.(&1, :rgt))
@@ -56,7 +56,7 @@ defmodule Statechart.Definition do
       |> Stream.concat()
       |> Enum.sort_by(&Node.lft/1)
 
-    %__MODULE__{tree | nodes: nodes}
+    %__MODULE__{statechart_def | nodes: nodes}
   end
 
   #####################################
@@ -115,10 +115,10 @@ defmodule Statechart.Definition do
   # TODO rename to get_path_of?
   @spec get_path(t, Node.t() | Node.fetch_spec(), (Node.t() -> term)) :: [term]
   # TODO replace this default with nil
-  def get_path(tree, node, mapper \\ fn node -> node end)
+  def get_path(statechart_def, node, mapper \\ fn node -> node end)
 
-  def get_path(%__MODULE__{} = tree, %Node{} = node, mapper) do
-    tree
+  def get_path(%__MODULE__{} = statechart_def, %Node{} = node, mapper) do
+    statechart_def
     |> nodes
     |> Stream.take_while(fn %Node{lft: lft} -> lft <= node.lft end)
     |> Stream.filter(fn %Node{rgt: rgt} -> node.rgt <= rgt end)
@@ -145,8 +145,8 @@ defmodule Statechart.Definition do
     end
   end
 
-  def fetch_node_by_id!(tree, id) do
-    {:ok, node} = fetch(tree, {:id, id})
+  def fetch_node_by_id!(statechart_def, id) do
+    {:ok, node} = fetch(statechart_def, {:id, id})
     node
   end
 
@@ -157,8 +157,8 @@ defmodule Statechart.Definition do
     end
   end
 
-  def nodes(tree, opts) do
-    nodes = nodes(tree)
+  def nodes(statechart_def, opts) do
+    nodes = nodes(statechart_def)
 
     case opts[:mapper] do
       nil -> nodes
@@ -166,18 +166,17 @@ defmodule Statechart.Definition do
     end
   end
 
-  def root(tree) do
-    tree |> nodes |> hd
+  def root(statechart_def) do
+    statechart_def |> nodes |> hd
   end
 
-  def node_count(tree) do
-    {lft, rgt} = tree |> root() |> Node.lft_rgt()
+  def node_count(statechart_def) do
+    {lft, rgt} = statechart_def |> root() |> Node.lft_rgt()
     (rgt + 1 - lft) / 2
   end
 
-  def max_node_id(tree), do: tree |> nodes(mapper: &Node.id/1) |> Enum.max()
+  def max_node_id(statechart_def), do: statechart_def |> nodes(mapper: &Node.id/1) |> Enum.max()
 
-  # TODO rename tree -> statechart_def
   #####################################
   # CONVERTERS (private)
 
@@ -233,8 +232,8 @@ defmodule Statechart.Definition do
   # IMPLEMENTATIONS
 
   # defimpl Inspect do
-  #   def inspect(tree, opts) do
-  #     Util.Inspect.custom_kv("Statechart", tree.nodes, opts)
+  #   def inspect(statechart_def, opts) do
+  #     Util.Inspect.custom_kv("Statechart", statechart_def.nodes, opts)
   #   end
   # end
 end

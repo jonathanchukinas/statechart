@@ -30,12 +30,13 @@ defmodule Statechart.Node do
   #####################################
   # REDUCERS
 
-  def add_to_lft(%__MODULE__{lft: lft} = node, addend) do
-    %__MODULE__{node | lft: lft + addend}
-  end
-
-  def add_to_rgt(%__MODULE__{rgt: rgt} = node, addend) do
-    %__MODULE__{node | rgt: rgt + addend}
+  @spec update_if(t, :id | :lft | :rgt, (t -> boolean), (integer -> integer)) :: t
+  def update_if(%__MODULE__{} = node, key, if_fn, update_fn) do
+    if node |> Map.fetch!(key) |> if_fn.() do
+      Map.update!(node, key, update_fn)
+    else
+      node
+    end
   end
 
   def add_to_lft_rgt(%__MODULE__{lft: lft, rgt: rgt} = node, addend) do

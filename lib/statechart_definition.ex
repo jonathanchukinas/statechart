@@ -35,21 +35,15 @@ defmodule Statechart.Definition do
     old_nodes_addend = 2 * length(new_nodes)
     new_nodes_addend = parent_rgt
 
-    maybe_update_old_lft = fn
-      %Node{lft: lft} = node when lft >= parent_rgt -> Node.add_to_lft(node, old_nodes_addend)
-      node -> node
-    end
-
-    maybe_update_old_rgt = fn
-      %Node{rgt: rgt} = node when rgt >= parent_rgt -> Node.add_to_rgt(node, old_nodes_addend)
-      node -> node
+    maybe_update_old_node = fn %Node{} = node, key ->
+      Node.update_if(node, key, &(&1 >= parent_rgt), &(&1 + old_nodes_addend))
     end
 
     prepared_old_nodes =
       tree
       |> nodes
-      |> Stream.map(maybe_update_old_lft)
-      |> Stream.map(maybe_update_old_rgt)
+      |> Stream.map(&maybe_update_old_node.(&1, :lft))
+      |> Stream.map(&maybe_update_old_node.(&1, :rgt))
 
     prepared_new_nodes =
       new_nodes

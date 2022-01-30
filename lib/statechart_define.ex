@@ -8,29 +8,26 @@ defmodule Statechart.Define do
   # DEFCHART
 
   defmacro defchart(opts \\ [], do: block) do
-    opts = Keyword.put(opts, :metadata, Macro.escape(metadata(__CALLER__)))
     ast = Statechart.Define.__defchart__(block, opts)
 
     quote do
-      # Module.register_attribute(__MODULE__, :__sc_current_id__)
       (fn -> unquote(ast) end).()
     end
   end
 
   @doc false
-  def __defchart__(block, opts) do
+  def __defchart__(block, _opts) do
     quote do
       Define.__defchart_enter__(__ENV__)
 
       import Statechart.Define
-      @__sc_chart__ Definition.new("hi!", unquote(opts))
       # TODO dynamically set the suubtype
       @type t :: Definition.t(String.t())
 
       unquote(block)
 
       @spec definition() :: t
-      def definition, do: @__sc_chart__
+      def definition, do: @__sc_acc__.statechart_def
 
       Define.__defchart_exit__(__ENV__)
     end
@@ -38,14 +35,19 @@ defmodule Statechart.Define do
 
   @doc false
   def __defchart_enter__(env) do
+    %Definition{} = statechart_def = Definition.new("hi!", metadata: metadata(env))
     Module.put_attribute(env.module, :__sc_build_step__, :insert_nodes)
-    Module.put_attribute(env.module, :__sc_current_id__, 1)
-    Module.register_attribute(env.module, :__sc_chart__, [])
+
+    Module.put_attribute(env.module, :__sc_acc__, %{
+      statechart_def: statechart_def,
+      current_node_id: Tree.max_node_id(statechart_def)
+    })
   end
 
   @doc false
-  def __defchart_exit__(_env) do
-    # TODO delete module attrs
+  def __defchart_exit__(env) do
+    Module.delete_attribute(env.module, :__sc_build_step__)
+    Module.delete_attribute(env.module, :__sc_acc__)
   end
 
   #####################################
@@ -62,28 +64,27 @@ defmodule Statechart.Define do
   """
   defmacro defstate(name, do: block) do
     quote do
-      Define.__defstate_enter__(@__sc_build_step__, unquote(name), __ENV__)
+      Define.__defstate_enter__(@__sc_build_step__, @__sc_acc__, __ENV__, unquote(name))
       unquote(block)
-      Define.__defstate_exit__(@__sc_build_step__, __ENV__)
+      Define.__defstate_exit__(@__sc_build_step__, @__sc_acc__, __ENV__)
     end
   end
 
   @doc false
-  def __defstate_enter__(:insert_nodes = _build_step, name, env) do
-    # TODO replace the multiple __sc...__ module attrs with a single __sc__ map
-    # This makes more sense since these aren't accumulating attrs.
-    # It gets annoying doing all this read/writing from/to module attrs.
-    # Do it once for each read and write. use a map or, better yet, a struct
-    %Definition{} = definition = Module.get_attribute(env.module, :__sc_chart__)
-    parent_id = Module.get_attribute(env.module, :__sc_current_id__)
-    node_opts = [metadata: metadata(env)]
-    %Node{} = node = Node.new(name, node_opts)
-    {:ok, definition} = Tree.insert(definition, node, parent_id)
-    Module.put_attribute(env.module, :__sc_chart__, definition)
+  def __defstate_enter__(
+        :insert_nodes = _build_step,
+        %{statechart_def: definition, current_node_id: parent_id} = acc,
+        env,
+        name
+      ) do
+    %Node{} = new_node = Node.new(name, metadata: metadata(env))
+    {:ok, updated_statechart_def} = Tree.insert(definition, new_node, parent_id)
+    updated_acc = %{acc | statechart_def: updated_statechart_def}
+    Module.put_attribute(env.module, :__sc_acc__, updated_acc)
   end
 
   @doc false
-  def __defstate_exit__(_build_step, _env) do
+  def __defstate_exit__(_build_step, _acc, _env) do
     # set current node_id to this node's parent
     # TODO add function/macro for retrieving node_id via its metadata
     # TODO on enter, get all nodes defined in this module and check that they don't have they the same name.

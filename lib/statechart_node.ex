@@ -8,6 +8,7 @@ defmodule Statechart.Node do
     field :name, atom
     field :lft, non_neg_integer, default: 0
     field :rgt, pos_integer, default: 1
+    field :metadata, map, default: %{}
   end
 
   @type not_inserted ::
@@ -23,13 +24,17 @@ defmodule Statechart.Node do
   #####################################
   # CONSTRUCTORS
 
-  @spec root(id) :: t
-  def root(id) do
-    %__MODULE__{id: id, name: :root}
+  @spec root(id, keyword) :: t
+  # TODO id should be part of opts?
+  def root(id, opts \\ []) do
+    new(:root, Keyword.put(opts, :id, id))
   end
 
-  @spec new(atom) :: not_inserted
-  def new(name) when is_atom(name), do: %__MODULE__{name: name}
+  @spec new(atom, keyword) :: not_inserted
+  def new(name, opts \\ []) when is_atom(name) do
+    opts = Keyword.put(opts, :name, name)
+    struct(__MODULE__, opts)
+  end
 
   #####################################
   # REDUCERS

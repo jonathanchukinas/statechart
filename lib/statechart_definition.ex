@@ -24,8 +24,20 @@ defmodule Statechart.Definition do
   @spec new() :: t
   def new, do: %__MODULE__{}
 
-  @spec new(context_type) :: t(context_type) when context_type: any
-  def new(context), do: %__MODULE__{context: context}
+  # TODO move the context into the opts
+  @spec new(context_type, keyword) :: t(context_type) when context_type: any
+  def new(context, opts \\ []) when is_list(opts) do
+    # There's gotta be a more idiomatic way to do this
+    opts =
+      [metadata: %{}]
+      |> Keyword.merge(opts)
+
+    %__MODULE__{
+      context: context,
+      # TODO the root I should be part of opts?
+      nodes: [Node.root(@starting_node_id, opts)]
+    }
+  end
 
   #####################################
   # API

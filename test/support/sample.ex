@@ -5,5 +5,6 @@ defmodule Statechart.TestSupport.SampleDefinition do
   # TODO Tests
   # Ensure only one defchart can be declared per module
   defchart do
+    defstate :on
   end
 end

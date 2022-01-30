@@ -9,13 +9,23 @@ defmodule Statechart.Definition do
 
   getter_struct do
     field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]
+    field :context, nil, default: nil
   end
+
+  @type t(context_type) ::
+          %__MODULE__{
+            nodes: [Node.t(), ...],
+            context: context_type
+          }
 
   #####################################
   # CONSTRUCTORS
 
   @spec new() :: t
   def new, do: %__MODULE__{}
+
+  @spec new(context_type) :: t(context_type) when context_type: any
+  def new(context), do: %__MODULE__{context: context}
 
   #####################################
   # API

@@ -1,4 +1,4 @@
-defmodule StatechartTest do
+defmodule Statechart.TreeTest do
   use ExUnit.Case
   use ExUnitProperties
   alias Statechart.Node

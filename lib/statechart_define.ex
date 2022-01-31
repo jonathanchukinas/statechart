@@ -7,8 +7,8 @@ defmodule Statechart.Define do
   #####################################
   # DEFCHART
 
-  defmacro defchart(opts \\ [], do: block) do
-    ast = Statechart.Define.__defchart__(block, opts)
+  defmacro defchart(do: block) do
+    ast = Statechart.Define.__defchart__(block)
 
     quote do
       (fn -> unquote(ast) end).()
@@ -16,7 +16,7 @@ defmodule Statechart.Define do
   end
 
   @doc false
-  def __defchart__(block, _opts) do
+  def __defchart__(block) do
     quote do
       Define.__defchart_enter__(__ENV__)
 
@@ -35,6 +35,7 @@ defmodule Statechart.Define do
 
   @doc false
   def __defchart_enter__(env) do
+    # TODO introduce context
     %Definition{} = statechart_def = Definition.new("hi!", metadata: metadata(env))
     Module.put_attribute(env.module, :__sc_build_step__, :insert_nodes)
 
@@ -79,12 +80,21 @@ defmodule Statechart.Define do
       ) do
     %Node{} = new_node = Node.new(name, metadata: metadata(env))
     {:ok, updated_statechart_def} = Tree.insert(definition, new_node, parent_id)
-    updated_acc = %{acc | statechart_def: updated_statechart_def}
-    Module.put_attribute(env.module, :__sc_acc__, updated_acc)
+    # TODO wrap this update in function
+    Module.put_attribute(env.module, :__sc_acc__, %{acc | statechart_def: updated_statechart_def})
   end
 
   @doc false
-  def __defstate_exit__(_build_step, _acc, _env) do
+  def __defstate_exit__(_build_step, %{statechart_def: statechart_def} = acc, env) do
+    with {:ok, current_node} <-
+           Statechart.Definition.Query.fetch_node_by_metadata(statechart_def, metadata(env)),
+         {:ok, parent_node} <- Tree.fetch_parent_by_id(statechart_def, Node.id(current_node)),
+         parent_id <- Node.id(parent_node) do
+      Module.put_attribute(env.module, :__sc_acc__, %{acc | current_node_id: parent_id})
+    else
+      {:error, _type} -> raise "whoopsie!"
+    end
+
     # set current node_id to this node's parent
     # TODO add function/macro for retrieving node_id via its metadata
     # TODO on enter, get all nodes defined in this module and check that they don't have they the same name.

@@ -44,7 +44,7 @@ defmodule Statechart.Definition do
 
   defmacro __using__(_opts) do
     quote do
-      import Statechart.Define, only: [defchart: 1, defchart: 2]
+      import Statechart.Define, only: [defchart: 1]
     end
   end
 

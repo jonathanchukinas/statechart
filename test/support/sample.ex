@@ -4,7 +4,7 @@ defmodule Statechart.TestSupport.SampleDefinition do
 
   # TODO Tests
   # Ensure only one defchart can be declared per module
-  defchart do
+  defchart type: String.t() do
     defstate :on do
     end
   end

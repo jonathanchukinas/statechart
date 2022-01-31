@@ -7,8 +7,8 @@ defmodule Statechart.Define do
   #####################################
   # DEFCHART
 
-  defmacro defchart(do: block) do
-    ast = Statechart.Define.__defchart__(block)
+  defmacro defchart(opts \\ [], do: block) do
+    ast = Statechart.Define.__defchart__(block, opts)
 
     quote do
       (fn -> unquote(ast) end).()
@@ -16,13 +16,13 @@ defmodule Statechart.Define do
   end
 
   @doc false
-  def __defchart__(block) do
+  def __defchart__(block, opts) do
     quote do
       Define.__defchart_enter__(__ENV__)
 
       import Statechart.Define
-      # TODO dynamically set the suubtype
-      @type t :: Definition.t(String.t())
+
+      Define.__type__(unquote(opts[:type]))
 
       unquote(block)
 
@@ -30,6 +30,21 @@ defmodule Statechart.Define do
       def definition, do: @__sc_acc__.statechart_def
 
       Define.__defchart_exit__(__ENV__)
+    end
+  end
+
+  @doc false
+  defmacro __type__(type) do
+    case type do
+      nil ->
+        quote do
+          @type t :: Definition.t()
+        end
+
+      type ->
+        quote do
+          @type t :: Definition.t(unquote(type))
+        end
     end
   end
 

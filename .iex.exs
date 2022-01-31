@@ -1,1 +1,1 @@
-alias Statechart.Sandbox
+alias Statechart.TestSupport.SampleDefinition, as: Sample

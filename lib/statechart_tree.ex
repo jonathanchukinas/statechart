@@ -1,6 +1,6 @@
 defmodule Statechart.Tree do
-  alias Statechart.Insertable
   alias Statechart.Node
+  alias Statechart.Tree.Insertable
   alias Statechart.Tree.IsTree
 
   @type t :: IsTree

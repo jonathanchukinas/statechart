@@ -1,14 +1,15 @@
 # Should this be Define.Query? Will it be used outside of the build step?
 defmodule Statechart.Definition.Query do
   alias Statechart.Node
+  alias Statechart.Node.Meta
   alias Statechart.Tree.IsTree
 
-  @type t :: IsTree
+  @type t :: IsTree.t()
 
   #####################################
   # CONVERTERS
 
-  @spec fetch_node_by_metadata(t, Node.meta()) ::
+  @spec fetch_node_by_metadata(t, Meta.t()) ::
           {:ok, Node.maybe_not_inserted()} | {:error, :no_metadata_match}
   def fetch_node_by_metadata(tree, metadata) do
     tree

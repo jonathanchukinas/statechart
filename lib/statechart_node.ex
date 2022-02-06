@@ -8,7 +8,7 @@ defmodule Statechart.Node do
     field :name, atom
     field :lft, non_neg_integer, default: 0
     field :rgt, pos_integer, default: 1
-    field :metadata, map, default: %{}
+    field :metadata, Statechart.Node.Meta.t(), enforce: false
   end
 
   @type not_inserted ::

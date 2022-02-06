@@ -1,9 +1,9 @@
 defmodule Statechart.Tree do
   alias Statechart.Insertable
   alias Statechart.Node
-  alias Statechart.TreeStructure
+  alias Statechart.Tree.IsTree
 
-  @type t :: TreeStructure
+  @type t :: IsTree
 
   # TODO dryify this
   @starting_node_id 1
@@ -59,7 +59,7 @@ defmodule Statechart.Tree do
     end
   end
 
-  defdelegate put_nodes(tree, nodes), to: TreeStructure
+  defdelegate put_nodes(tree, nodes), to: IsTree
 
   #####################################
   # CONVERTERS
@@ -115,7 +115,7 @@ defmodule Statechart.Tree do
     end
   end
 
-  defdelegate fetch_nodes!(tree), to: TreeStructure
+  defdelegate fetch_nodes!(tree), to: IsTree
 
   @spec fetch_node_by_id(t, Node.id()) :: {:ok, Node.t()} | {:error, :id_not_found}
   def fetch_node_by_id(tree, id) do

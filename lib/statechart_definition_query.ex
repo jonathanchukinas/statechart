@@ -1,10 +1,9 @@
 # Should this be Define.Query? Will it be used outside of the build step?
 defmodule Statechart.Definition.Query do
   alias Statechart.Node
-  alias Statechart.TreeStructure
+  alias Statechart.Tree.IsTree
 
-  # TODO rename be be more general, perhaps HasNodes?
-  @type t :: TreeStructure
+  @type t :: IsTree
 
   #####################################
   # CONVERTERS
@@ -13,7 +12,7 @@ defmodule Statechart.Definition.Query do
           {:ok, Node.maybe_not_inserted()} | {:error, :no_metadata_match}
   def fetch_node_by_metadata(tree, metadata) do
     tree
-    |> TreeStructure.fetch_nodes!()
+    |> IsTree.fetch_nodes!()
     |> Enum.find(fn node -> Node.metadata(node) == metadata end)
     |> case do
       nil -> {:error, :no_metadata_match}

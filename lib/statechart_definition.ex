@@ -53,7 +53,7 @@ defmodule Statechart.Definition do
   #####################################
   # IMPLEMENTATIONS
 
-  defimpl Statechart.TreeStructure do
+  defimpl Statechart.Tree.IsTree do
     alias Statechart.Definition
 
     def put_nodes(statechart_def, nodes) do

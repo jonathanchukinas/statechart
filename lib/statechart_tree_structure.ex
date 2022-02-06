@@ -1,4 +1,7 @@
+# TOOD rename NodesAccess
 defprotocol Statechart.TreeStructure do
+  @moduledoc false
+
   alias Statechart.Node
 
   # TODO this is just here for troubleshooting

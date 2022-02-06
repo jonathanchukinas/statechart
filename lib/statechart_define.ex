@@ -50,7 +50,7 @@ defmodule Statechart.Define do
 
   @doc false
   def __defchart_enter__(env) do
-    # TODO introduce context
+    # TODO move the context to the Interpreter
     %Definition{} = statechart_def = Definition.new("hi!", metadata: metadata(env))
     Module.put_attribute(env.module, :__sc_build_step__, :insert_nodes)
 

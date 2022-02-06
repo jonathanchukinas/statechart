@@ -25,6 +25,7 @@ defmodule Statechart.MixProject do
   defp deps do
     [
       {:dialyxir, "~>1.1", only: [:dev], runtime: false},
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:stream_data, "~>0.5", only: [:dev, :test]},
       {:typed_struct, "~> 0.2.1"}
     ]

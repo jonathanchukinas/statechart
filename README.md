@@ -1,6 +1,9 @@
 # StateChart
 
-**TODO: Add description**
+This library is a pure-Elixir implementation of statecharts.
+See Hariman's (sp?) paper: <insert link here>
+
+
 
 ## Installation
 
@@ -14,6 +17,17 @@ def deps do
   ]
 end
 ```
+
+## Roadmap
+
+- [ ] Add ExDox
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can

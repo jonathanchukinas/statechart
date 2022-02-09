@@ -5,6 +5,7 @@ defmodule Statechart.Transition do
   In fact, `Statechart.Interpreter` just holds state and delegates out to this module.
   """
 
+  alias Statechart.Event
   alias Statechart.State
   alias Statechart.Definition
 

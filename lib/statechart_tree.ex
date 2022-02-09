@@ -3,7 +3,7 @@ defmodule Statechart.Tree do
   alias Statechart.Tree.Insertable
   alias Statechart.Tree.IsTree
 
-  @type t :: IsTree
+  @type t :: IsTree.t()
 
   # TODO dryify this
   @starting_node_id 1

@@ -1,6 +1,10 @@
 defmodule Statechart.Definition do
   use Statechart.Util.GetterStruct
   alias Statechart.Node
+  alias Statechart.Tree
+  alias Statechart.Tree.IsTree
+  alias Statechart.Metadata
+  alias Statechart.Metadata.HasMetadata
 
   #####################################
   # TYPES
@@ -9,6 +13,7 @@ defmodule Statechart.Definition do
 
   getter_struct do
     field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]
+    # TODO move to the interpreter?
     field :context, nil, default: nil
   end
 
@@ -39,6 +44,12 @@ defmodule Statechart.Definition do
     }
   end
 
+  def from_metadata(%Metadata{} = metadata) do
+    %__MODULE__{
+      nodes: [Node.root(@starting_node_id, metadata: metadata)]
+    }
+  end
+
   #####################################
   # API
 
@@ -53,7 +64,7 @@ defmodule Statechart.Definition do
   #####################################
   # IMPLEMENTATIONS
 
-  defimpl Statechart.Tree.IsTree do
+  defimpl IsTree do
     alias Statechart.Definition
 
     def put_nodes(statechart_def, nodes) do
@@ -61,6 +72,20 @@ defmodule Statechart.Definition do
     end
 
     defdelegate fetch_nodes!(statechart_def), to: Definition, as: :nodes
+  end
+
+  defimpl HasMetadata do
+    # A tree's metadata is the metadata of its root node
+
+    def fetch(statechart_def) do
+      statechart_def
+      |> Tree.root()
+      |> HasMetadata.fetch()
+    end
+
+    def put(statechart_def, metadata) do
+      Tree.update_root(statechart_def, &HasMetadata.put(&1, metadata))
+    end
   end
 
   # defimpl Inspect do

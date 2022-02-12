@@ -61,6 +61,22 @@ defmodule Statechart.Tree do
 
   defdelegate put_nodes(tree, nodes), to: IsTree
 
+  def update_root(tree, fun) do
+    [root | tail] = fetch_nodes!(tree)
+    put_nodes(tree, [fun.(root) | tail])
+  end
+
+  @spec update_node_by_id(t, Node.id(), Node.reducer()) :: t
+  def update_node_by_id(tree, id, update_fn) do
+    tree
+    |> fetch_nodes!
+    |> _update_node_by_id([], id, update_fn)
+    |> case do
+      {:ok, nodes} -> {:ok, put_nodes(tree, nodes)}
+      {:error, :id_not_found} = error -> error
+    end
+  end
+
   #####################################
   # CONVERTERS
 
@@ -239,6 +255,29 @@ defmodule Statechart.Tree do
 
       :no_parent ->
         "Child node id=#{id} has no parent in #{inspect(tree)}"
+    end
+  end
+
+  @spec _update_node_by_id([Node.t()], [Node.t()], Node.id(), Node.reducer()) :: [Node.t()]
+  defp _update_node_by_id([], _past_nodes, _id, _update_fn) do
+    # TODO can this be DRY'ed with what's in Tree?
+    {:error, :id_not_found}
+  end
+
+  defp _update_node_by_id([node | tail], past_nodes, id, update_fn) do
+    case Node.id(node) do
+      ^id ->
+        nodes = [update_fn.(node) | tail]
+
+        all_nodes =
+          Enum.reduce(past_nodes, nodes, fn node, nodes ->
+            [node | nodes]
+          end)
+
+        {:ok, all_nodes}
+
+      _ ->
+        _update_node_by_id(tail, [node | past_nodes], id, update_fn)
     end
   end
 end

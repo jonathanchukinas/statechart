@@ -1,23 +1,27 @@
 defmodule Statechart.Transition do
-  @moduledoc """
-  Stateless functions for transitioning from one state to another.
-  See `Statechart.Interpreter` for a stateful way of doing this.
-  In fact, `Statechart.Interpreter` just holds state and delegates out to this module.
-  """
-
+  use Statechart.Util.GetterStruct
+  alias __MODULE__
+  alias Statechart.Node
   alias Statechart.Event
-  alias Statechart.State
-  alias Statechart.Definition
 
-  @spec transition({State.t(), context}, Definition.t(context), Event.t()) ::
-          {State.t(), context}
-        when context: any
-  def transition({state, context}, _definition, _event) do
-    {state, context}
+  getter_struct do
+    field :event, Event.t()
+    field :destination_node_id, Node.id()
   end
 
-  @spec transition(State.t(), Definition.t(), Event.t()) :: State.t()
-  def transition(state, _definition, _event) do
-    state
+  #####################################
+  # CONSTRUCTORS
+
+  def new(event, destination_node_id) do
+    %__MODULE__{event: event, destination_node_id: destination_node_id}
+  end
+
+  #####################################
+  # IMPLEMENTATIONS
+
+  defimpl Inspect do
+    def inspect(%Transition{event: event, destination_node_id: destination_node_id}, _opts) do
+      "#Transition<#{event} >>> #{destination_node_id}>"
+    end
   end
 end

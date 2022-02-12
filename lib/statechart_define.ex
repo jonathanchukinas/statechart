@@ -1,8 +1,18 @@
+# TODO rename this Build?
 defmodule Statechart.Define do
   alias __MODULE__
-  alias Statechart.Node
   alias Statechart.Definition
+  alias Statechart.Definition.Query
+  alias Statechart.Event
+  alias Statechart.Metadata
+  alias Statechart.MetadataAccess
+  alias Statechart.Node
   alias Statechart.Tree
+
+  @build_steps ~w/
+    insert_nodes
+    insert_transitions
+    /a
 
   #####################################
   # DEFCHART
@@ -22,9 +32,13 @@ defmodule Statechart.Define do
 
       import Statechart.Define
 
+      # TODO context type rename
       Define.__type__(unquote(opts[:type]))
 
-      unquote(block)
+      for build_step <- unquote(@build_steps) do
+        @__sc_build_step__ build_step
+        unquote(block)
+      end
 
       @spec definition() :: t
       def definition, do: @__sc_acc__.statechart_def
@@ -51,9 +65,15 @@ defmodule Statechart.Define do
   @doc false
   def __defchart_enter__(%Macro.Env{} = env) do
     # TODO move the context to the Interpreter
-    %Definition{} = statechart_def = Definition.new("hi!", metadata: metadata(env))
-    Module.put_attribute(env.module, :__sc_build_step__, :insert_nodes)
+    # TODO shouldn't be hi
+    %Definition{} =
+      statechart_def =
+      Definition.new("hi!")
+      |> MetadataAccess.put_from_env(env)
 
+    Module.register_attribute(env.module, :__sc_build_step__, [])
+
+    # TODO this should be a struct. Define.Acc?
     Module.put_attribute(env.module, :__sc_acc__, %{
       statechart_def: statechart_def,
       current_node_id: Tree.max_node_id(statechart_def)
@@ -93,16 +113,23 @@ defmodule Statechart.Define do
         env,
         name
       ) do
-    %Node{} = new_node = Node.new(name, metadata: metadata(env))
+    %Node{} = new_node = Node.new(name, metadata: Metadata.from_env(env))
     {:ok, updated_statechart_def} = Tree.insert(definition, new_node, parent_id)
     # TODO wrap this update in function
     Module.put_attribute(env.module, :__sc_acc__, %{acc | statechart_def: updated_statechart_def})
   end
 
+  def __defstate_enter__(_build_step, _acc, _env, _name) do
+    nil
+  end
+
   @doc false
   def __defstate_exit__(_build_step, %{statechart_def: statechart_def} = acc, env) do
     with {:ok, current_node} <-
-           Statechart.Definition.Query.fetch_node_by_metadata(statechart_def, metadata(env)),
+           Statechart.Definition.Query.fetch_node_by_metadata(
+             statechart_def,
+             Metadata.from_env(env)
+           ),
          {:ok, parent_node} <- Tree.fetch_parent_by_id(statechart_def, Node.id(current_node)),
          parent_id <- Node.id(parent_node) do
       Module.put_attribute(env.module, :__sc_acc__, %{acc | current_node_id: parent_id})
@@ -119,7 +146,45 @@ defmodule Statechart.Define do
   end
 
   #####################################
-  # HELPERS
+  # TRANSITION
 
-  defp metadata(caller), do: Map.take(caller, [:line, :module])
+  defmacro event >>> destination_node_name do
+    # TODO check that event is an atom or a module
+    quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
+      Define.__transition__(
+        @__sc_build_step__,
+        @__sc_acc__,
+        __ENV__,
+        event,
+        destination_node_name
+      )
+    end
+  end
+
+  def __transition__(
+        :insert_transitions,
+        # TODO make this a struct I can just use dot notation on
+        %{statechart_def: statechart_def, current_node_id: node_id} = acc,
+        env,
+        event,
+        destination_node_name
+      ) do
+    with :ok <- Event.validate(event),
+         {:ok, destination_node} <-
+           Query.fetch_node_by_name(statechart_def, destination_node_name),
+         update_fn = &Node.put_transition(&1, event, Node.id(destination_node)),
+         {:ok, statechart_def} <- Tree.update_node_by_id(statechart_def, node_id, update_fn) do
+      # TODO can I clean this up? make a macro for it?
+      Module.put_attribute(env.module, :__sc_acc__, %{acc | statechart_def: statechart_def})
+    else
+      # TODO implement
+      {:error, error} -> raise error
+    end
+
+    nil
+  end
+
+  def __transition__(_build_step, _acc, _env, _event, _destination_node_name) do
+    nil
+  end
 end

@@ -98,7 +98,7 @@ defmodule Statechart.Build do
     quote do
       Build.__defstate_enter__(@__sc_build_step__, __ENV__, unquote(name))
       unquote(block)
-      Build.__defstate_exit__(@__sc_build_step__, __ENV__)
+      Build.__defstate_exit__(__ENV__)
     end
   end
 
@@ -121,7 +121,7 @@ defmodule Statechart.Build do
   end
 
   @doc false
-  def __defstate_exit__(_build_step, env) do
+  def __defstate_exit__(env) do
     statechart_def = Acc.statechart_def(env)
 
     with {:ok, current_node} <-
@@ -133,6 +133,7 @@ defmodule Statechart.Build do
          parent_id <- Node.id(parent_node) do
       Acc.put_current_id(env, parent_id)
     else
+      # TODO implement
       {:error, _type} -> raise "whoopsie!"
     end
 
@@ -150,12 +151,7 @@ defmodule Statechart.Build do
   defmacro event >>> destination_node_name do
     # TODO check that event is an atom or a module
     quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
-      Build.__transition__(
-        @__sc_build_step__,
-        __ENV__,
-        event,
-        destination_node_name
-      )
+      Build.__transition__(@__sc_build_step__, __ENV__, event, destination_node_name)
     end
   end
 
@@ -170,11 +166,19 @@ defmodule Statechart.Build do
          {:ok, statechart_def} <- Tree.update_node_by_id(statechart_def, node_id, update_fn) do
       Acc.put_statechart_def(env, statechart_def)
     else
-      # TODO implement
-      {:error, error} -> raise error
-    end
+      {:error, error} ->
+        # TODO Test that this raises on the correct line
+        raise error
+        # {:error, error} ->
+        #   msg =
+        #     case error do
+        #       :ambiguous_name -> "neitsornatorsa"
+        #       :name_not_found -> "neitsornatorsa"
+        #       :id_not_found -> "neitsornatorsa"
+        #     end
 
-    nil
+        #   raise msg
+    end
   end
 
   def __transition__(_build_step, _env, _event, _destination_node_name) do

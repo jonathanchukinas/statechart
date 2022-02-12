@@ -113,7 +113,7 @@ defmodule Statechart.Build do
   end
 
   def __defstate_enter__(_build_step, _env, _name) do
-    nil
+    :ok
   end
 
   @doc false
@@ -124,17 +124,10 @@ defmodule Statechart.Build do
          {:ok, parent_node} <- fetch_parent_by_id(statechart_def, Node.id(current_node)),
          parent_id <- Node.id(parent_node) do
       Acc.put_current_id(env, parent_id)
+      :ok
     else
-      # TODO implement
-      {:error, _type} -> raise "whoopsie!"
+      {:error, reason} -> raise CompileError, description: to_string(reason)
     end
-
-    # set current node_id to this node's parent
-    # TODO add function/macro for retrieving node_id via its metadata
-    # TODO on enter, get all nodes defined in this module and check that they don't have they the same name.
-    # raise if any are found. Include that nodes's line# in the error message.
-    # TODO create a StatechartCompileError exception. I'd use this any time a predictable compile error occurs.
-    nil
   end
 
   #####################################
@@ -173,6 +166,6 @@ defmodule Statechart.Build do
   end
 
   def __transition__(_build_step, _env, _event, _destination_node_name) do
-    nil
+    :ok
   end
 end

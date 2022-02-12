@@ -12,4 +12,5 @@ defmodule Statechart.BuildTest do
   end
 
   test "defstate do-block is optional"
+  test "invalid state names raise a StatechartCompileError"
 end

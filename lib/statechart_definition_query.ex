@@ -1,4 +1,3 @@
-# Should this be Define.Query? Will it be used outside of the build step?
 defmodule Statechart.Definition.Query do
   alias Statechart.Definition
   alias Statechart.Metadata
@@ -39,9 +38,6 @@ defmodule Statechart.Definition.Query do
     end
   end
 
-  # correct arg1 type?
-  # TODO is maybe not inserted the right type?
-  # TODO what error?
   @spec fetch_node_by_name(t, atom) ::
           {:ok, Node.t()} | {:error, :name_not_found} | {:error, :ambiguous_name}
   def fetch_node_by_name(statechart_def, name) when is_atom(name) do

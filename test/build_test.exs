@@ -17,6 +17,7 @@ defmodule Statechart.BuildTest do
     test "do-block is optional"
 
     # This should test for the line number
+    # Should give suggestions for matching names ("Did you mean ...?")
     test "raises a StatechartCompileError on invalid state names"
   end
 

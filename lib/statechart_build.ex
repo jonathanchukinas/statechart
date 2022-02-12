@@ -143,6 +143,8 @@ defmodule Statechart.Build do
     end
   end
 
+  # TODO add typespec?
+  # TODO raise here or in macro?
   def __transition__(:insert_transitions, env, event, destination_node_name) do
     statechart_def = Acc.statechart_def(env)
     node_id = Acc.current_id(env)

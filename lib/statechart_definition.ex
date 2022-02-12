@@ -49,6 +49,16 @@ defmodule Statechart.Definition do
 
   # TODO this ought to move to Statechart
   # TODO in the docs, talk about a convention where you would name the using module something like MyApp.Statechart
+
+  defmacro __using__(:import) do
+    quote do
+      import Statechart.Definition.Query
+      import Statechart.Tree
+      alias Statechart.Definition
+      alias Statechart.Node
+    end
+  end
+
   defmacro __using__(_opts) do
     quote do
       import Statechart.Build, only: [defchart: 1, defchart: 2]

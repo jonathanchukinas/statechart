@@ -1,13 +1,10 @@
 defmodule Statechart.Build do
   use TypedStruct
+  use Statechart.Definition, :import
   alias __MODULE__
   alias Statechart.Build.Acc
-  alias Statechart.Definition
-  alias Statechart.Definition.Query
   alias Statechart.Event
   alias Statechart.Metadata
-  alias Statechart.Node
-  alias Statechart.Tree
 
   @build_steps ~w/
     insert_nodes
@@ -18,7 +15,7 @@ defmodule Statechart.Build do
   # DEFCHART
 
   defmacro defchart(opts \\ [], do: block) do
-    ast = Statechart.Build.__defchart__(block, opts)
+    ast = Build.__defchart__(block, opts)
 
     quote do
       (fn -> unquote(ast) end).()
@@ -110,7 +107,7 @@ defmodule Statechart.Build do
     {:ok, updated_statechart_def} =
       env
       |> Acc.statechart_def()
-      |> Tree.insert(new_node, parent_id)
+      |> insert(new_node, parent_id)
 
     Acc.put_statechart_def(env, updated_statechart_def)
   end
@@ -123,12 +120,8 @@ defmodule Statechart.Build do
   def __defstate_exit__(env) do
     statechart_def = Acc.statechart_def(env)
 
-    with {:ok, current_node} <-
-           Statechart.Definition.Query.fetch_node_by_metadata(
-             statechart_def,
-             Metadata.from_env(env)
-           ),
-         {:ok, parent_node} <- Tree.fetch_parent_by_id(statechart_def, Node.id(current_node)),
+    with {:ok, current_node} <- fetch_node_by_metadata(statechart_def, Metadata.from_env(env)),
+         {:ok, parent_node} <- fetch_parent_by_id(statechart_def, Node.id(current_node)),
          parent_id <- Node.id(parent_node) do
       Acc.put_current_id(env, parent_id)
     else
@@ -159,10 +152,9 @@ defmodule Statechart.Build do
     node_id = Acc.current_id(env)
 
     with :ok <- Event.validate(event),
-         {:ok, destination_node} <-
-           Query.fetch_node_by_name(statechart_def, destination_node_name),
+         {:ok, destination_node} <- fetch_node_by_name(statechart_def, destination_node_name),
          update_fn = &Node.put_transition(&1, event, Node.id(destination_node)),
-         {:ok, statechart_def} <- Tree.update_node_by_id(statechart_def, node_id, update_fn) do
+         {:ok, statechart_def} <- update_node_by_id(statechart_def, node_id, update_fn) do
       Acc.put_statechart_def(env, statechart_def)
     else
       {:error, error} ->

@@ -4,7 +4,6 @@ defmodule Statechart.Build do
   alias Statechart.Definition.Query
   alias Statechart.Event
   alias Statechart.Metadata
-  alias Statechart.MetadataAccess
   alias Statechart.Node
   alias Statechart.Tree
 
@@ -47,28 +46,24 @@ defmodule Statechart.Build do
   end
 
   @doc false
-  defmacro __type__(type) do
-    case type do
+  defmacro __type__(_type) do
+    # case type do
+    case nil do
       nil ->
         quote do
           @type t :: Definition.t()
         end
 
-      type ->
-        quote do
-          @type t :: Definition.t(unquote(type))
-        end
+        # type ->
+        #   quote do
+        #     @type t :: Definition.t(unquote(type))
+        #   end
     end
   end
 
   @doc false
   def __defchart_enter__(%Macro.Env{} = env) do
-    # TODO move the context to the Interpreter
-    # TODO shouldn't be hi
-    %Definition{} =
-      statechart_def =
-      Definition.new("hi!")
-      |> MetadataAccess.put_from_env(env)
+    %Definition{} = statechart_def = Definition.from_env(env)
 
     Module.register_attribute(env.module, :__sc_build_step__, [])
 

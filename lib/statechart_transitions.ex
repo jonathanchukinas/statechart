@@ -9,7 +9,8 @@ defmodule Statechart.Transitions do
   alias Statechart.State
   alias Statechart.Definition
 
-  @spec transition({State.t(), context}, Definition.t(context), Event.t()) ::
+  # @spec transition({State.t(), context}, Definition.t(context), Event.t()) ::
+  @spec transition({State.t(), context}, Definition.t(), Event.t()) ::
           {State.t(), context}
         when context: any
   def transition({state, context}, _definition, _event) do

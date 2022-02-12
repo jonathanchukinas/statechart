@@ -13,40 +13,34 @@ defmodule Statechart.Definition do
 
   getter_struct do
     field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]
-    # TODO move to the interpreter?
-    field :context, nil, default: nil
   end
 
-  @type t(context_type) ::
-          %__MODULE__{
-            nodes: [Node.t(), ...],
-            context: context_type
-          }
+  # @type t(context_type) ::
+  #         %__MODULE__{
+  #           nodes: [Node.t(), ...]
+  #         }
 
   #####################################
   # CONSTRUCTORS
 
-  @spec new() :: t
-  def new, do: %__MODULE__{}
-
   # TODO move the context into the opts
-  @spec new(context_type, keyword) :: t(context_type) when context_type: any
-  def new(context, opts \\ []) when is_list(opts) do
+  @spec new(keyword) :: t
+  # @spec new(keyword) :: t(context_type) when context_type: any
+  def new(opts \\ []) when is_list(opts) do
     # There's gotta be a more idiomatic way to do this
     opts =
       [metadata: %{}]
       |> Keyword.merge(opts)
 
     %__MODULE__{
-      context: context,
       # TODO the root I should be part of opts?
       nodes: [Node.root(@starting_node_id, opts)]
     }
   end
 
-  def from_metadata(%Metadata{} = metadata) do
+  def from_env(env) do
     %__MODULE__{
-      nodes: [Node.root(@starting_node_id, metadata: metadata)]
+      nodes: [Node.root(@starting_node_id, metadata: Metadata.from_env(env))]
     }
   end
 

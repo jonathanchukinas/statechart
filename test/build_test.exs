@@ -10,4 +10,6 @@ defmodule Statechart.BuildTest do
     assert {:definition, 0} in SampleDefinition.__info__(:functions)
     assert match?(%Definition{}, SampleDefinition.definition())
   end
+
+  test "defstate do-block is optional"
 end

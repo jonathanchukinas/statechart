@@ -1,7 +1,7 @@
 defmodule Statechart.Build do
-  use Statechart.Util.GetterStruct
+  use TypedStruct
   alias __MODULE__
-  alias __MODULE__.Acc
+  alias Statechart.Build.Acc
   alias Statechart.Definition
   alias Statechart.Definition.Query
   alias Statechart.Event
@@ -13,25 +13,6 @@ defmodule Statechart.Build do
     insert_nodes
     insert_transitions
     /a
-
-  #####################################
-  # ACCUMULATOR
-
-  defmodule Acc do
-    getter_struct do
-      field :statechart_def, Definition.t()
-      field :current_node_id, Node.id()
-    end
-
-    def new(statechart_def),
-      do: %__MODULE__{
-        statechart_def: statechart_def,
-        current_node_id: Tree.max_node_id(statechart_def)
-      }
-
-    def put_def(acc, statechart_def), do: %__MODULE__{acc | statechart_def: statechart_def}
-    def put_current_id(acc, id), do: %__MODULE__{acc | current_node_id: id}
-  end
 
   #####################################
   # DEFCHART
@@ -59,10 +40,18 @@ defmodule Statechart.Build do
         unquote(block)
       end
 
-      @spec definition() :: t
-      def definition, do: Acc.statechart_def(@__sc_acc__)
-
       Build.__defchart_exit__(__ENV__)
+      @before_compile unquote(__MODULE__)
+    end
+  end
+
+  defmacro __before_compile__(env) do
+    statechart_def = Acc.statechart_def(env)
+    Acc.delete_attribute(env)
+
+    quote do
+      @spec definition() :: t
+      def definition, do: unquote(Macro.escape(statechart_def))
     end
   end
 
@@ -84,23 +73,19 @@ defmodule Statechart.Build do
 
   @doc false
   def __defchart_enter__(%Macro.Env{} = env) do
-    %Definition{} = statechart_def = Definition.from_env(env)
-
+    statechart_def = Definition.from_env(env)
     Module.register_attribute(env.module, :__sc_build_step__, [])
-
-    Module.put_attribute(env.module, :__sc_acc__, Acc.new(statechart_def))
+    Acc.put_new(env, statechart_def)
   end
 
   @doc false
   def __defchart_exit__(env) do
     Module.delete_attribute(env.module, :__sc_build_step__)
-    Module.delete_attribute(env.module, :__sc_acc__)
   end
 
   #####################################
   # DEFSTATE
 
-  # TODO add test for testing that node's block is optional
   @doc """
   Create a statechart node.
 
@@ -111,31 +96,34 @@ defmodule Statechart.Build do
   """
   defmacro defstate(name, do: block) do
     quote do
-      Build.__defstate_enter__(@__sc_build_step__, @__sc_acc__, __ENV__, unquote(name))
+      Build.__defstate_enter__(@__sc_build_step__, __ENV__, unquote(name))
       unquote(block)
-      Build.__defstate_exit__(@__sc_build_step__, @__sc_acc__, __ENV__)
+      Build.__defstate_exit__(@__sc_build_step__, __ENV__)
     end
   end
 
   @doc false
-  def __defstate_enter__(
-        :insert_nodes = _build_step,
-        %Acc{statechart_def: definition, current_node_id: parent_id} = acc,
-        env,
-        name
-      ) do
-    %Node{} = new_node = Node.new(name, metadata: Metadata.from_env(env))
-    {:ok, updated_statechart_def} = Tree.insert(definition, new_node, parent_id)
-    # TODO wrap this update in function
-    Module.put_attribute(env.module, :__sc_acc__, Acc.put_def(acc, updated_statechart_def))
+  def __defstate_enter__(:insert_nodes = _build_step, env, name) do
+    new_node = Node.new(name, metadata: Metadata.from_env(env))
+
+    parent_id = Acc.current_id(env)
+
+    {:ok, updated_statechart_def} =
+      env
+      |> Acc.statechart_def()
+      |> Tree.insert(new_node, parent_id)
+
+    Acc.put_statechart_def(env, updated_statechart_def)
   end
 
-  def __defstate_enter__(_build_step, _acc, _env, _name) do
+  def __defstate_enter__(_build_step, _env, _name) do
     nil
   end
 
   @doc false
-  def __defstate_exit__(_build_step, %Acc{statechart_def: statechart_def} = acc, env) do
+  def __defstate_exit__(_build_step, env) do
+    statechart_def = Acc.statechart_def(env)
+
     with {:ok, current_node} <-
            Statechart.Definition.Query.fetch_node_by_metadata(
              statechart_def,
@@ -143,7 +131,7 @@ defmodule Statechart.Build do
            ),
          {:ok, parent_node} <- Tree.fetch_parent_by_id(statechart_def, Node.id(current_node)),
          parent_id <- Node.id(parent_node) do
-      Module.put_attribute(env.module, :__sc_acc__, Acc.put_current_id(acc, parent_id))
+      Acc.put_current_id(env, parent_id)
     else
       {:error, _type} -> raise "whoopsie!"
     end
@@ -164,7 +152,6 @@ defmodule Statechart.Build do
     quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
       Build.__transition__(
         @__sc_build_step__,
-        @__sc_acc__,
         __ENV__,
         event,
         destination_node_name
@@ -172,21 +159,16 @@ defmodule Statechart.Build do
     end
   end
 
-  def __transition__(
-        :insert_transitions,
-        # TODO make this a struct I can just use dot notation on
-        %Acc{statechart_def: statechart_def, current_node_id: node_id} = acc,
-        env,
-        event,
-        destination_node_name
-      ) do
+  def __transition__(:insert_transitions, env, event, destination_node_name) do
+    statechart_def = Acc.statechart_def(env)
+    node_id = Acc.current_id(env)
+
     with :ok <- Event.validate(event),
          {:ok, destination_node} <-
            Query.fetch_node_by_name(statechart_def, destination_node_name),
          update_fn = &Node.put_transition(&1, event, Node.id(destination_node)),
          {:ok, statechart_def} <- Tree.update_node_by_id(statechart_def, node_id, update_fn) do
-      # TODO can I clean this up? make a macro for it?
-      Module.put_attribute(env.module, :__sc_acc__, Acc.put_def(acc, statechart_def))
+      Acc.put_statechart_def(env, statechart_def)
     else
       # TODO implement
       {:error, error} -> raise error
@@ -195,7 +177,7 @@ defmodule Statechart.Build do
     nil
   end
 
-  def __transition__(_build_step, _acc, _env, _event, _destination_node_name) do
+  def __transition__(_build_step, _env, _event, _destination_node_name) do
     nil
   end
 end

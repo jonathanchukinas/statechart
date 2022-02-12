@@ -15,7 +15,9 @@ defmodule Statechart.TreeTest do
   setup_all do
     empty_tree = Definition.new()
     starting_max_parent_id = Tree.max_node_id(empty_tree)
-    min_possible_parent_id = empty_tree |> Tree.nodes(mapper: &Node.id/1) |> Enum.min()
+
+    min_possible_parent_id =
+      empty_tree |> Tree.fetch_nodes!() |> Stream.map(&Node.id/1) |> Enum.min()
 
     # :: [{Node.t(), integer}]
     nodes_with_parent_ids_generator =
@@ -52,9 +54,8 @@ defmodule Statechart.TreeTest do
 
   property "Nodes are stored in ascending lft order", %{tree_generator: tree_generator} do
     check all(tree <- tree_generator) do
-      # TODO get rid of "mapper"
-      node_lft_values = tree |> Tree.fetch_nodes!() |> Enum.map(&Node.lft/1)
-      assert node_lft_values == Enum.sort(node_lft_values)
+      node_lft_values = tree |> Tree.fetch_nodes!() |> Stream.map(&Node.lft/1)
+      assert Enum.to_list(node_lft_values) == Enum.sort(node_lft_values)
     end
   end
 

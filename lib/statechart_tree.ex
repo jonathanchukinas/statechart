@@ -179,15 +179,6 @@ defmodule Statechart.Tree do
     @starting_node_id - 1 + node_count(tree)
   end
 
-  def nodes(tree, opts) do
-    nodes = fetch_nodes!(tree)
-
-    case opts[:mapper] do
-      nil -> nodes
-      mapper -> Enum.map(nodes, mapper)
-    end
-  end
-
   @spec node_count(t) :: pos_integer
   def node_count(tree) do
     {lft, rgt} = tree |> root() |> Node.lft_rgt()

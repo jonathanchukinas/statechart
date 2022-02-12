@@ -28,16 +28,12 @@ defmodule Statechart.Build.Acc do
     put_attribute(env, acc)
   end
 
-  # TODO which of these can be private?
-
   def put_current_id(env, id) do
     acc = %__MODULE__{get_attribute(env) | current_node_id: id}
     put_attribute(env, acc)
   end
 
   # CONVERTERS
-
-  # TODO move this to another file?
 
   @spec statechart_def(Macro.Env.t()) :: Definition.t()
   def statechart_def(%Macro.Env{module: module}) do
@@ -53,16 +49,12 @@ defmodule Statechart.Build.Acc do
     |> Map.fetch!(:current_node_id)
   end
 
-  def put_attribute(%Macro.Env{module: module} = env, acc) do
+  defp put_attribute(%Macro.Env{module: module} = env, acc) do
     Module.put_attribute(module, @attr, acc)
     env
   end
 
   # HELPERS
-
-  def register_attribute(%Macro.Env{module: module}) do
-    Module.register_attribute(module, @attr, [])
-  end
 
   def delete_attribute(%Macro.Env{module: module}) do
     Module.delete_attribute(module, @attr)

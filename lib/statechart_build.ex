@@ -1,6 +1,6 @@
 defmodule Statechart.Build do
   use TypedStruct
-  use Statechart.Definition, :import
+  use Statechart.Definition
   alias __MODULE__
   alias Statechart.Build.Acc
   alias Statechart.Event

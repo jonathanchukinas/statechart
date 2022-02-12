@@ -15,27 +15,12 @@ defmodule Statechart.Definition do
     field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]
   end
 
-  # @type t(context_type) ::
-  #         %__MODULE__{
-  #           nodes: [Node.t(), ...]
-  #         }
-
   #####################################
   # CONSTRUCTORS
 
-  # TODO move the context into the opts
-  @spec new(keyword) :: t
-  # @spec new(keyword) :: t(context_type) when context_type: any
-  def new(opts \\ []) when is_list(opts) do
-    # There's gotta be a more idiomatic way to do this
-    opts =
-      [metadata: %{}]
-      |> Keyword.merge(opts)
-
-    %__MODULE__{
-      # TODO the root I should be part of opts?
-      nodes: [Node.root(@starting_node_id, opts)]
-    }
+  @spec new() :: t
+  def new() do
+    %__MODULE__{nodes: [Node.root(@starting_node_id)]}
   end
 
   def from_env(env) do
@@ -47,21 +32,13 @@ defmodule Statechart.Definition do
   #####################################
   # API
 
-  # TODO this ought to move to Statechart
-  # TODO in the docs, talk about a convention where you would name the using module something like MyApp.Statechart
-
-  defmacro __using__(:import) do
+  @doc false
+  defmacro __using__(_opts) do
     quote do
       import Statechart.Definition.Query
       import Statechart.Tree
       alias Statechart.Definition
       alias Statechart.Node
-    end
-  end
-
-  defmacro __using__(_opts) do
-    quote do
-      import Statechart.Build, only: [defchart: 1, defchart: 2]
     end
   end
 

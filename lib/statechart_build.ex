@@ -32,8 +32,7 @@ defmodule Statechart.Build do
 
       import Build
 
-      # TODO context type rename
-      Build.__type__(unquote(opts[:type]))
+      Build.__context_type__(unquote(opts[:context_type]))
 
       for build_step <- unquote(@build_steps) do
         @__sc_build_step__ build_step
@@ -56,7 +55,7 @@ defmodule Statechart.Build do
   end
 
   @doc false
-  defmacro __type__(_type) do
+  defmacro __context_type__(_type) do
     # case type do
     case nil do
       nil ->

@@ -5,7 +5,8 @@ defmodule Statechart.TestSupport.SampleDefinition do
   # TODO Tests
   # Ensure only one defchart can be declared per module
   # Ensure each node name declared in a module is unique
-  defchart type: String.t() do
+  # TODO does this context_type belong here?
+  defchart context_type: String.t() do
     defstate :on do
       :flip >>> :off
     end

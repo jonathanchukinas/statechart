@@ -10,7 +10,7 @@ defmodule Statechart.Node do
 
   getter_struct do
     field :id, id, default: 0
-    field :name, atom
+    field :name, name
     field :lft, non_neg_integer, default: 0
     field :rgt, pos_integer, default: 1
     field :metadata, Metadata.t(), enforce: false
@@ -27,6 +27,7 @@ defmodule Statechart.Node do
 
   @type maybe_not_inserted :: t | not_inserted
   @type reducer :: (t -> t)
+  @type name :: atom
 
   #####################################
   # CONSTRUCTORS

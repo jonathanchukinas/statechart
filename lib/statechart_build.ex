@@ -134,7 +134,10 @@ defmodule Statechart.Build do
   # TRANSITION
 
   defmacro event >>> destination_node_name do
-    # TODO check that event is an atom or a module
+    if :ok != Event.validate(event) do
+      raise CompileError, description: "#{event} is not a valid event"
+    end
+
     quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
       Build.__transition__(@__sc_build_step__, __ENV__, event, destination_node_name)
     end
@@ -150,18 +153,7 @@ defmodule Statechart.Build do
          {:ok, statechart_def} <- update_node_by_id(statechart_def, node_id, update_fn) do
       Acc.put_statechart_def(env, statechart_def)
     else
-      {:error, error} ->
-        # TODO Test that this raises on the correct line
-        raise error
-        # {:error, error} ->
-        #   msg =
-        #     case error do
-        #       :ambiguous_name -> "neitsornatorsa"
-        #       :name_not_found -> "neitsornatorsa"
-        #       :id_not_found -> "neitsornatorsa"
-        #     end
-
-        #   raise msg
+      {:error, error} -> raise to_string(error)
     end
   end
 

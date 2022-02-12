@@ -6,11 +6,22 @@ defmodule Statechart.BuildTest do
   alias Statechart.Definition
   alias Statechart.TestSupport.SampleDefinition
 
-  test "defchart/2 injects a definition/0 function into caller" do
-    assert {:definition, 0} in SampleDefinition.__info__(:functions)
-    assert match?(%Definition{}, SampleDefinition.definition())
+  describe "defchart/2" do
+    test "injects a definition/0 function into caller" do
+      assert {:definition, 0} in SampleDefinition.__info__(:functions)
+      assert match?(%Definition{}, SampleDefinition.definition())
+    end
   end
 
-  test "defstate do-block is optional"
-  test "invalid state names raise a StatechartCompileError"
+  describe "defstate/2" do
+    test "do-block is optional"
+
+    # This should test for the line number
+    test "raises a StatechartCompileError on invalid state names"
+  end
+
+  describe ">>>/2" do
+    # This should test for the line number
+    test "raises a StatechartCompileError on invalid event names"
+  end
 end

@@ -1,5 +1,4 @@
-# TODO rename this Build?
-defmodule Statechart.Define do
+defmodule Statechart.Build do
   alias __MODULE__
   alias Statechart.Definition
   alias Statechart.Definition.Query
@@ -18,7 +17,7 @@ defmodule Statechart.Define do
   # DEFCHART
 
   defmacro defchart(opts \\ [], do: block) do
-    ast = Statechart.Define.__defchart__(block, opts)
+    ast = Statechart.Build.__defchart__(block, opts)
 
     quote do
       (fn -> unquote(ast) end).()
@@ -28,12 +27,12 @@ defmodule Statechart.Define do
   @doc false
   def __defchart__(block, opts) do
     quote do
-      Define.__defchart_enter__(__ENV__)
+      Build.__defchart_enter__(__ENV__)
 
-      import Statechart.Define
+      import Build
 
       # TODO context type rename
-      Define.__type__(unquote(opts[:type]))
+      Build.__type__(unquote(opts[:type]))
 
       for build_step <- unquote(@build_steps) do
         @__sc_build_step__ build_step
@@ -43,7 +42,7 @@ defmodule Statechart.Define do
       @spec definition() :: t
       def definition, do: @__sc_acc__.statechart_def
 
-      Define.__defchart_exit__(__ENV__)
+      Build.__defchart_exit__(__ENV__)
     end
   end
 
@@ -73,7 +72,7 @@ defmodule Statechart.Define do
 
     Module.register_attribute(env.module, :__sc_build_step__, [])
 
-    # TODO this should be a struct. Define.Acc?
+    # TODO this should be a struct. Build.Acc?
     Module.put_attribute(env.module, :__sc_acc__, %{
       statechart_def: statechart_def,
       current_node_id: Tree.max_node_id(statechart_def)
@@ -100,9 +99,9 @@ defmodule Statechart.Define do
   """
   defmacro defstate(name, do: block) do
     quote do
-      Define.__defstate_enter__(@__sc_build_step__, @__sc_acc__, __ENV__, unquote(name))
+      Build.__defstate_enter__(@__sc_build_step__, @__sc_acc__, __ENV__, unquote(name))
       unquote(block)
-      Define.__defstate_exit__(@__sc_build_step__, @__sc_acc__, __ENV__)
+      Build.__defstate_exit__(@__sc_build_step__, @__sc_acc__, __ENV__)
     end
   end
 
@@ -151,7 +150,7 @@ defmodule Statechart.Define do
   defmacro event >>> destination_node_name do
     # TODO check that event is an atom or a module
     quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
-      Define.__transition__(
+      Build.__transition__(
         @__sc_build_step__,
         @__sc_acc__,
         __ENV__,

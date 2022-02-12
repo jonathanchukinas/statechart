@@ -57,7 +57,7 @@ defmodule Statechart.Definition do
   # TODO in the docs, talk about a convention where you would name the using module something like MyApp.Statechart
   defmacro __using__(_opts) do
     quote do
-      import Statechart.Define, only: [defchart: 1, defchart: 2]
+      import Statechart.Build, only: [defchart: 1, defchart: 2]
     end
   end
 

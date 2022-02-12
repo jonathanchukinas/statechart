@@ -1,4 +1,4 @@
-defmodule Statechart.DefineTest do
+defmodule Statechart.BuildTest do
   use ExUnit.Case
   # use ExUnitProperties
   # alias Statechart.Node

@@ -10,6 +10,7 @@ defmodule Statechart.Tree do
   #####################################
   # REDUCERS
 
+  # TODO fix spec
   @spec insert(t, Insertable.t(), Node.id()) :: {:ok, t} | {:error, :id_not_found}
   def insert(tree, insertable, parent_id) do
     new_nodes = Insertable.nodes(insertable)
@@ -33,9 +34,14 @@ defmodule Statechart.Tree do
         |> Stream.map(&maybe_update_old_node.(&1, :rgt))
 
       prepared_new_nodes =
-        new_nodes
-        |> Stream.map(&Node.add_to_lft_rgt(&1, new_nodes_addend))
-        |> Enum.with_index(fn node, index -> Node.set_id(node, index + starting_new_id) end)
+        Enum.map(new_nodes, fn %Node{} = node ->
+          node
+          |> Node.add_to_lft_rgt(new_nodes_addend)
+          |> Statechart.HasIdRefs.incr_id_refs(0, starting_new_id)
+        end)
+
+      # TODO this works?
+      # TODO test for inserting a tree
 
       nodes =
         [prepared_old_nodes, prepared_new_nodes]

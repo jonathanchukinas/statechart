@@ -2,10 +2,9 @@ defmodule Statechart.Node do
   use Statechart.Util.GetterStruct
   alias __MODULE__
   alias Statechart.Metadata
-  # TODO these module names are a mess
-  alias Statechart.Metadata.HasMetadata
   alias Statechart.Transition
 
+  # @type id :: Statechart.HasIdRefs.id()
   @type id :: pos_integer
 
   getter_struct do
@@ -33,7 +32,6 @@ defmodule Statechart.Node do
   # CONSTRUCTORS
 
   @spec root(id, keyword) :: t
-  # TODO id should be part of opts?
   def root(id, opts \\ []) do
     new(:root, Keyword.put(opts, :id, id))
   end
@@ -50,7 +48,7 @@ defmodule Statechart.Node do
   # TODO need a function for updating ids b/c now the transition has to be incremented as well
 
   # TODO review typespecs
-  @spec update_if(t, :id | :lft | :rgt, (t -> boolean), (integer -> integer)) :: t
+  @spec update_if(t, :lft | :rgt, (t -> boolean), (integer -> integer)) :: t
   def update_if(%__MODULE__{} = node, key, if_fn, update_fn) do
     if node |> Map.fetch!(key) |> if_fn.() do
       Map.update!(node, key, update_fn)
@@ -59,14 +57,12 @@ defmodule Statechart.Node do
     end
   end
 
+  @spec add_to_lft_rgt(t, integer) :: t
   def add_to_lft_rgt(%__MODULE__{lft: lft, rgt: rgt} = node, addend) do
     %__MODULE__{node | lft: lft + addend, rgt: rgt + addend}
   end
 
-  def set_id(node, id) do
-    %__MODULE__{node | id: id}
-  end
-
+  @spec put_transition(t, Event.t(), id, Metadata.t()) :: t
   def put_transition(%__MODULE__{} = node, event, destination_node_id, metadata) do
     transition = Transition.new(event, destination_node_id, metadata)
     Map.update!(node, :transitions, &[transition | &1])
@@ -81,12 +77,30 @@ defmodule Statechart.Node do
   #####################################
   # IMPLEMENTATIONS
 
-  defimpl HasMetadata do
+  defimpl Statechart.Metadata.HasMetadata do
     def fetch(%Node{metadata: metadata}) do
       case metadata do
         %Metadata{} -> {:ok, metadata}
         _ -> {:error, :missing_metadata}
       end
+    end
+  end
+
+  defimpl Statechart.HasIdRefs do
+    def incr_id_refs(%Node{id: id} = node, start_id, addend) do
+      id =
+        if start_id <= id do
+          id + addend
+        else
+          id
+        end
+
+      transitions =
+        node
+        |> Node.transitions()
+        |> Enum.map(&Statechart.HasIdRefs.incr_id_refs(&1, start_id, addend))
+
+      %Node{node | id: id, transitions: transitions}
     end
   end
 

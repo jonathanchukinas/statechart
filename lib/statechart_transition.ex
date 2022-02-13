@@ -26,4 +26,15 @@ defmodule Statechart.Transition do
       "#Transition<#{event} >>> #{destination_node_id}>"
     end
   end
+
+  defimpl Statechart.HasIdRefs do
+    def incr_id_refs(%Transition{destination_node_id: id} = transition, start_id, addend) do
+      # TODO can this logic be moved to the protocol def?
+      if start_id <= id do
+        Map.update!(transition, :destination_node_id, &(&1 + addend))
+      else
+        transition
+      end
+    end
+  end
 end

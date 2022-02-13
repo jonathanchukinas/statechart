@@ -67,10 +67,6 @@ defmodule Statechart.Definition do
       |> Tree.root()
       |> HasMetadata.fetch()
     end
-
-    def put(statechart_def, metadata) do
-      Tree.update_root(statechart_def, &HasMetadata.put(&1, metadata))
-    end
   end
 
   # defimpl Inspect do

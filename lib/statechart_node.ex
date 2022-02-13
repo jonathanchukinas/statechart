@@ -88,10 +88,6 @@ defmodule Statechart.Node do
         _ -> {:error, :missing_metadata}
       end
     end
-
-    def put(has_metadata, %Statechart.Metadata{} = metadata) do
-      %{has_metadata | metadata: metadata}
-    end
   end
 
   defimpl Inspect do

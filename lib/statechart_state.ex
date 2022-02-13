@@ -1,7 +1,6 @@
 defmodule Statechart.State do
   alias Statechart.Node
 
-  # TODO should this be moved to Node as a type (Node.state()) ?
   @typedoc """
   Describes the current state.
 

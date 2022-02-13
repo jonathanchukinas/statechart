@@ -5,12 +5,11 @@ defmodule Statechart.Tree do
 
   @type t :: IsTree.t()
 
-  # TODO dryify this
   @starting_node_id 1
+
   #####################################
   # REDUCERS
 
-  # TODO fix spec
   @spec insert(t, Insertable.t(), Node.id()) :: {:ok, t} | {:error, :id_not_found}
   def insert(tree, insertable, parent_id) do
     new_nodes = Insertable.nodes(insertable)
@@ -40,9 +39,6 @@ defmodule Statechart.Tree do
           |> Statechart.HasIdRefs.incr_id_refs(0, starting_new_id)
         end)
 
-      # TODO this works?
-      # TODO test for inserting a tree
-
       nodes =
         [prepared_old_nodes, prepared_new_nodes]
         |> Stream.concat()
@@ -54,9 +50,6 @@ defmodule Statechart.Tree do
     end
   end
 
-  # TODO this needs a boundary, which checks for:
-  #   insertable needs to valid
-  #     id: 0?
   @spec insert!(t, Insertable.t(), Node.id()) :: t
   def insert!(tree, insertable, parent_id) do
     case insert(tree, insertable, parent_id) do
@@ -180,8 +173,7 @@ defmodule Statechart.Tree do
     end
   end
 
-  # TODO be more specific with error reason
-  @spec fetch_path_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
+  @spec fetch_path_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, :id_not_found}
   def fetch_path_by_id(tree, id) do
     [terminator | rest] =
       tree
@@ -236,6 +228,8 @@ defmodule Statechart.Tree do
 
   #####################################
   # HELPERS
+
+  def starting_node_id, do: @starting_node_id
 
   @spec check_id(Node.t(), Node.id()) :: :ok | {:error, :id_not_found}
   defp check_id(node, id) do

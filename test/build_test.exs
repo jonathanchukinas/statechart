@@ -50,6 +50,10 @@ defmodule Statechart.BuildTest do
     test "raises a StatechartCompileError on invalid state names"
   end
 
+  describe "subchart/2" do
+    test "successfully inserts a sub-chart into a parent chart"
+  end
+
   describe ">>>/2" do
     # This should test for the line number
     test "raises a StatechartCompileError on invalid event names"

@@ -1,6 +1,7 @@
 defmodule Statechart.Node do
   use Statechart.Util.GetterStruct
   alias __MODULE__
+  alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.Transition
 
@@ -45,9 +46,6 @@ defmodule Statechart.Node do
   #####################################
   # REDUCERS
 
-  # TODO need a function for updating ids b/c now the transition has to be incremented as well
-
-  # TODO review typespecs
   @spec update_if(t, :lft | :rgt, (t -> boolean), (integer -> integer)) :: t
   def update_if(%__MODULE__{} = node, key, if_fn, update_fn) do
     if node |> Map.fetch!(key) |> if_fn.() do

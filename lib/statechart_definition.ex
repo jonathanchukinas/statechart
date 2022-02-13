@@ -9,7 +9,7 @@ defmodule Statechart.Definition do
   #####################################
   # TYPES
 
-  @starting_node_id 1
+  @starting_node_id Tree.starting_node_id()
 
   getter_struct do
     field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]

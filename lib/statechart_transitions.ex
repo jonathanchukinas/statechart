@@ -13,14 +13,13 @@ defmodule Statechart.Transitions do
   #####################################
   # API
 
-  # TODO rename handle_event
   # @spec transition({State.t(), context}, Definition.t(context), Event.t()) ::
-  @spec transition({State.t(), context}, Definition.t(), Event.t()) ::
-          {State.t(), context}
-        when context: any
-  def transition({state, context}, _definition, _event) do
-    {state, context}
-  end
+  # @spec transition({State.t(), context}, Definition.t(), Event.t()) ::
+  #         {State.t(), context}
+  #       when context: any
+  # def transition({state, context}, _definition, _event) do
+  #   {state, context}
+  # end
 
   @spec transition(State.t(), Definition.t(), Event.t()) :: State.t()
   def transition(state, _definition, _event) do

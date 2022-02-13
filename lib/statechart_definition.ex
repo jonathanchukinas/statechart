@@ -29,6 +29,10 @@ defmodule Statechart.Definition do
     }
   end
 
+  def from_module(module) do
+    module.definition()
+  end
+
   #####################################
   # API
 

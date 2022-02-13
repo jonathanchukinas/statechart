@@ -101,7 +101,8 @@ defmodule Statechart.Node do
       fields = [
         id: node.id,
         lft_rgt: {node.lft, node.rgt},
-        meta: node.metadata
+        meta: node.metadata,
+        transitions: node.transitions
       ]
 
       Statechart.Util.Inspect.custom_kv("Root", fields, opts)
@@ -112,7 +113,8 @@ defmodule Statechart.Node do
         id: node.id,
         lft_rgt: {node.lft, node.rgt},
         name: node.name,
-        meta: node.metadata
+        meta: node.metadata,
+        transitions: node.transitions
       ]
 
       Statechart.Util.Inspect.custom_kv("Node", fields, opts)

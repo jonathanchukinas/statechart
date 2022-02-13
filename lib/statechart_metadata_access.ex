@@ -27,6 +27,7 @@ defmodule Statechart.MetadataAccess do
     end
   end
 
+  # TODO remove?
   def put_from_env(has_metadata, env) do
     metadata = Metadata.from_env(env)
     HasMetadata.put(has_metadata, metadata)

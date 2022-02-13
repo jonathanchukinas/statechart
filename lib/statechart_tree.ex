@@ -174,6 +174,24 @@ defmodule Statechart.Tree do
     end
   end
 
+  # TODO be more specific with error reason
+  @spec fetch_path_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
+  def fetch_path_by_id(tree, id) do
+    [terminator | rest] =
+      tree
+      |> nodes_up_to_and_incl_node_id(id)
+      |> Enum.reverse()
+
+    with :ok <- check_id(terminator, id),
+         {lft, rgt} <- Node.lft_rgt(terminator) do
+      parent_nodes = for node <- rest, Node.lft(node) < lft, rgt < Node.rgt(node), do: node
+      path = Enum.reverse([terminator | parent_nodes])
+      {:ok, path}
+    else
+      {:error, _type} = error -> error
+    end
+  end
+
   @spec max_node_id(t) :: Node.id()
   def max_node_id(tree) do
     @starting_node_id - 1 + node_count(tree)
@@ -193,23 +211,6 @@ defmodule Statechart.Tree do
 
   #####################################
   # CONVERTERS (private)
-
-  @spec fetch_path_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
-  defp fetch_path_by_id(tree, id) do
-    [terminator | rest] =
-      tree
-      |> nodes_up_to_and_incl_node_id(id)
-      |> Enum.reverse()
-
-    with :ok <- check_id(terminator, id),
-         {lft, rgt} <- Node.lft_rgt(terminator) do
-      parent_nodes = for node <- rest, Node.lft(node) < lft, rgt < Node.rgt(node), do: node
-      path = Enum.reverse([terminator | parent_nodes])
-      {:ok, path}
-    else
-      {:error, _type} = error -> error
-    end
-  end
 
   @spec nodes_up_to_and_incl_node_id(t, Node.id()) :: Enumerable.t()
   defp nodes_up_to_and_incl_node_id(tree, id) do

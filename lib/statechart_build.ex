@@ -109,7 +109,11 @@ defmodule Statechart.Build do
       |> Acc.statechart_def()
       |> insert(new_node, parent_id)
 
-    Acc.put_statechart_def(env, updated_statechart_def)
+    {:ok, new_node_id} = fetch_node_id_by_state(updated_statechart_def, name)
+
+    env
+    |> Acc.put_current_id(new_node_id)
+    |> Acc.put_statechart_def(updated_statechart_def)
   end
 
   def __defstate_enter__(_build_step, _env, _name) do
@@ -152,7 +156,8 @@ defmodule Statechart.Build do
     with :ok <- Event.validate(event),
          {:ok, destination_node} <- fetch_node_by_name(statechart_def, destination_node_name),
          update_fn = &Node.put_transition(&1, event, Node.id(destination_node)),
-         {:ok, statechart_def} <- update_node_by_id(statechart_def, node_id, update_fn) do
+         {:ok, statechart_def} <-
+           update_node_by_id(statechart_def, node_id, update_fn) do
       Acc.put_statechart_def(env, statechart_def)
     else
       {:error, error} -> raise to_string(error)

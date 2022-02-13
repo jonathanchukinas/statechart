@@ -60,5 +60,5 @@ defmodule Statechart.Build.Acc do
     Module.delete_attribute(module, @attr)
   end
 
-  defp get_attribute(%Macro.Env{module: module}), do: Module.get_attribute(module, @attr)
+  def get_attribute(%Macro.Env{module: module}), do: Module.get_attribute(module, @attr)
 end

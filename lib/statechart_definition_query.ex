@@ -1,8 +1,10 @@
 defmodule Statechart.Definition.Query do
   alias Statechart.Definition
+  alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.MetadataAccess
   alias Statechart.Node
+  alias Statechart.Transition
   alias Statechart.Tree
   alias Statechart.Tree.IsTree
 
@@ -59,5 +61,39 @@ defmodule Statechart.Definition.Query do
       {:ok, node_module} = MetadataAccess.fetch_module(node)
       tree_module == node_module
     end)
+  end
+
+  @spec fetch_node_id_by_state(t, State.t()) :: {:ok, Node.id()} | :error
+  def fetch_node_id_by_state(definition, node_id) when is_integer(node_id) do
+    if Tree.contains_id?(definition, node_id), do: {:ok, node_id}, else: :error
+  end
+
+  def fetch_node_id_by_state(definition, node_name) when is_atom(node_name) do
+    case fetch_node_by_name(definition, node_name) do
+      {:ok, node} -> {:ok, Node.id(node)}
+      {:error, _reason} -> :error
+    end
+  end
+
+  @spec fetch_node_id_by_state!(t, State.t()) :: Node.id()
+  def fetch_node_id_by_state!(definition, state) do
+    case fetch_node_id_by_state(definition, state) do
+      {:ok, node_id} -> node_id
+      {:error, _reason} -> raise "#{state} not found!"
+    end
+  end
+
+  @spec fetch_transition(Definition.t(), Node.id(), Event.t()) ::
+          {:ok, Transition.t()} | {:error, :event_not_found}
+  def fetch_transition(definition, node_id, event) do
+    {:ok, nodes} = Tree.fetch_path_by_id(definition, node_id)
+
+    nodes
+    |> Stream.flat_map(&Node.transitions/1)
+    |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))
+    |> case do
+      nil -> {:error, :event_not_found}
+      transition -> {:ok, transition}
+    end
   end
 end

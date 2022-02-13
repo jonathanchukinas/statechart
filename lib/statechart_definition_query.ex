@@ -5,6 +5,7 @@ defmodule Statechart.Definition.Query do
   alias Statechart.MetadataAccess
   alias Statechart.Node
   alias Statechart.Transition
+  alias Statechart.State
   alias Statechart.Tree
   alias Statechart.Tree.IsTree
 
@@ -63,15 +64,15 @@ defmodule Statechart.Definition.Query do
     end)
   end
 
-  @spec fetch_node_id_by_state(t, State.t()) :: {:ok, Node.id()} | :error
+  @spec fetch_node_id_by_state(t, State.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
   def fetch_node_id_by_state(definition, node_id) when is_integer(node_id) do
-    if Tree.contains_id?(definition, node_id), do: {:ok, node_id}, else: :error
+    if Tree.contains_id?(definition, node_id), do: {:ok, node_id}, else: {:error, :id_not_found}
   end
 
   def fetch_node_id_by_state(definition, node_name) when is_atom(node_name) do
     case fetch_node_by_name(definition, node_name) do
       {:ok, node} -> {:ok, Node.id(node)}
-      {:error, _reason} -> :error
+      {:error, _reason} = error -> error
     end
   end
 

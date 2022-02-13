@@ -31,9 +31,9 @@ defmodule Statechart.Transitions do
   # HELPERS
 
   @type path_item :: {:up | :down, Node.t()}
-  @spec fetch_transition_path(Definition.t(), State.t(), Context.t(), Event.t()) ::
+  @spec fetch_transition_path(Definition.t(), State.t(), Event.t()) ::
           {:ok, [path_item]} | {:error, atom}
-  def fetch_transition_path(definition, state, _context \\ nil, event) do
+  def fetch_transition_path(definition, state, event) do
     with {:ok, node_id} <- fetch_node_id_by_state(definition, state),
          {:ok, transition} <- fetch_transition(definition, node_id, event),
          destination_node_id = Transition.destination_node_id(transition),
@@ -48,15 +48,8 @@ defmodule Statechart.Transitions do
   end
 
   defp do_transition_path([head1 | state_tail], [head1 | destination_tail]) do
-    state_path_items =
-      state_tail
-      |> Enum.reverse()
-      |> Stream.map(&{:up, &1})
-
-    destination_path_items =
-      destination_tail
-      |> Stream.map(&{:down, &1})
-
-    state_path_items ++ destination_path_items
+    state_path_items = Enum.map(state_tail, &{:up, &1})
+    destination_path_items = Enum.map(destination_tail, &{:down, &1})
+    Enum.reduce(state_path_items, destination_path_items, &[&1 | &2])
   end
 end

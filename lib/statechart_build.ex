@@ -11,6 +11,8 @@ defmodule Statechart.Build do
     insert_transitions
     /a
 
+  @type build_step :: :insert_nodes | :insert_transitions
+
   #####################################
   # DEFCHART
 
@@ -23,6 +25,7 @@ defmodule Statechart.Build do
   end
 
   @doc false
+  @spec __defchart__(any, keyword) :: Macro.t()
   def __defchart__(block, opts) do
     quote do
       Build.__defchart_enter__(__ENV__)
@@ -68,15 +71,19 @@ defmodule Statechart.Build do
   end
 
   @doc false
+  @spec __defchart_enter__(Macro.Env.t()) :: :ok
   def __defchart_enter__(%Macro.Env{} = env) do
     statechart_def = Definition.from_env(env)
     Module.register_attribute(env.module, :__sc_build_step__, [])
     Acc.put_new(env, statechart_def)
+    :ok
   end
 
   @doc false
+  @spec __defchart_exit__(Macro.Env.t()) :: :ok
   def __defchart_exit__(env) do
     Module.delete_attribute(env.module, :__sc_build_step__)
+    :ok
   end
 
   #####################################
@@ -99,6 +106,7 @@ defmodule Statechart.Build do
   end
 
   @doc false
+  @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name()) :: :ok
   def __defstate_enter__(:insert_nodes = _build_step, env, name) do
     new_node = Node.new(name, metadata: Metadata.from_env(env))
 
@@ -114,6 +122,8 @@ defmodule Statechart.Build do
     env
     |> Acc.put_current_id(new_node_id)
     |> Acc.put_statechart_def(updated_statechart_def)
+
+    :ok
   end
 
   def __defstate_enter__(_build_step, _env, _name) do
@@ -121,6 +131,7 @@ defmodule Statechart.Build do
   end
 
   @doc false
+  @spec __defstate_exit__(Macro.Env.t()) :: :ok
   def __defstate_exit__(env) do
     statechart_def = Acc.statechart_def(env)
 
@@ -147,8 +158,7 @@ defmodule Statechart.Build do
     end
   end
 
-  # TODO add typespec?
-  # TODO raise here or in macro?
+  @spec __transition__(build_step, Macro.Env.t(), Event.t(), Node.name()) :: :ok
   def __transition__(:insert_transitions, env, event, destination_node_name) do
     statechart_def = Acc.statechart_def(env)
     node_id = Acc.current_id(env)
@@ -160,6 +170,7 @@ defmodule Statechart.Build do
          {:ok, statechart_def} <-
            update_node_by_id(statechart_def, node_id, update_fn) do
       Acc.put_statechart_def(env, statechart_def)
+      :ok
     else
       {:error, error} -> raise to_string(error)
     end

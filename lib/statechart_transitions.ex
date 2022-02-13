@@ -48,8 +48,8 @@ defmodule Statechart.Transitions do
   end
 
   defp do_transition_path([head1 | state_tail], [head1 | destination_tail]) do
-    state_path_items = Enum.map(state_tail, &{:up, &1})
-    destination_path_items = Enum.map(destination_tail, &{:down, &1})
+    state_path_items = Stream.map(state_tail, &{:exit, &1})
+    destination_path_items = Enum.map(destination_tail, &{:enter, &1})
     Enum.reduce(state_path_items, destination_path_items, &[&1 | &2])
   end
 end

@@ -22,8 +22,6 @@ defmodule Statechart.Definition.QueryTest do
       end
     end
 
-    # TODO add metadata to transition
-
     test "returns ok transition tuple" do
       definition = Definition.from_module(Sample)
       {:ok, 4 = node_id} = fetch_node_id_by_state(definition, :c)

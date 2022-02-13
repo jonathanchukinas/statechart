@@ -67,8 +67,8 @@ defmodule Statechart.Node do
     %__MODULE__{node | id: id}
   end
 
-  def put_transition(%__MODULE__{} = node, event, destination_node_id) do
-    transition = Transition.new(event, destination_node_id)
+  def put_transition(%__MODULE__{} = node, event, destination_node_id, metadata) do
+    transition = Transition.new(event, destination_node_id, metadata)
     Map.update!(node, :transitions, &[transition | &1])
   end
 

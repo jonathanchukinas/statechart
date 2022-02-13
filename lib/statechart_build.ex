@@ -155,7 +155,8 @@ defmodule Statechart.Build do
 
     with :ok <- Event.validate(event),
          {:ok, destination_node} <- fetch_node_by_name(statechart_def, destination_node_name),
-         update_fn = &Node.put_transition(&1, event, Node.id(destination_node)),
+         update_fn =
+           &Node.put_transition(&1, event, Node.id(destination_node), Metadata.from_env(env)),
          {:ok, statechart_def} <-
            update_node_by_id(statechart_def, node_id, update_fn) do
       Acc.put_statechart_def(env, statechart_def)

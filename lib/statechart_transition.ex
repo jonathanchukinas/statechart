@@ -3,17 +3,19 @@ defmodule Statechart.Transition do
   alias __MODULE__
   alias Statechart.Node
   alias Statechart.Event
+  alias Statechart.Metadata
 
   getter_struct do
     field :event, Event.t()
     field :destination_node_id, Node.id()
+    field :metadata, Metadata.t()
   end
 
   #####################################
   # CONSTRUCTORS
 
-  def new(event, destination_node_id) do
-    %__MODULE__{event: event, destination_node_id: destination_node_id}
+  def new(event, destination_node_id, metadata) do
+    %__MODULE__{event: event, destination_node_id: destination_node_id, metadata: metadata}
   end
 
   #####################################

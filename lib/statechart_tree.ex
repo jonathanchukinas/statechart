@@ -253,7 +253,6 @@ defmodule Statechart.Tree do
   @spec _update_node_by_id([Node.t()], [Node.t()], Node.id(), Node.reducer()) ::
           {:ok, [Node.t()]} | {:error, :id_not_found}
   defp _update_node_by_id([], _past_nodes, _id, _update_fn) do
-    # TODO can this be DRY'ed with what's in Tree?
     {:error, :id_not_found}
   end
 

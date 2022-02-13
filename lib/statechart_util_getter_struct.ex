@@ -60,8 +60,7 @@ defmodule Statechart.Util.GetterStruct do
       use TypedStruct
 
       typedstruct unquote(new_opts) do
-        # TODO is this unquote necessary?
-        plugin(unquote(Statechart.Util.GetterStructPlugin))
+        plugin Statechart.Util.GetterStructPlugin
         unquote(block)
       end
     end

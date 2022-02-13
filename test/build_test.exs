@@ -1,41 +1,48 @@
 defmodule Statechart.BuildTest do
   use ExUnit.Case
-  # use ExUnitProperties
-  # alias Statechart.Node
-  # alias Statechart.Tree
   use Statechart.Definition
 
-  alias Statechart.TestSupport.SampleDefinition
+  describe "defchart/2" do
+    defmodule Sample do
+      use Statechart
 
-  defmodule Sample do
-    use Statechart
+      defchart do
+        defstate :on, do: :flip >>> :off
 
-    defchart do
-      defstate :a do
-        defstate :b do
-          # TODO Can I make this caps case?
-          :goto_d >>> :d
+        defstate :off do
+          :flip >>> :on
+        end
+      end
+    end
 
-          defstate :c do
-            defstate :d do
+    test "only one statechart is allowed per module"
+
+    test "injects a definition/0 function into caller" do
+      assert {:definition, 0} in Sample.__info__(:functions)
+      assert match?(%Definition{}, Sample.definition())
+    end
+  end
+
+  describe "defstate/2" do
+    defmodule Sample do
+      use Statechart
+
+      defchart do
+        defstate :a do
+          defstate :b do
+            :GOTO_D >>> :d
+
+            defstate :c do
+              defstate :d do
+              end
             end
           end
         end
       end
     end
-  end
 
-  describe "defchart/2" do
-    test "injects a definition/0 function into caller" do
-      assert {:definition, 0} in SampleDefinition.__info__(:functions)
-      assert match?(%Definition{}, SampleDefinition.definition())
-    end
-  end
-
-  describe "defstate/2" do
     test "correctly nests states" do
-      # TODO rename to fetch_... and return tuple?
-      definition = Definition.from_module(Sample)
+      {:ok, definition} = Definition.fetch_from_module(Sample)
       {:ok, 5 = d_node_id} = fetch_node_id_by_state(definition, :d)
       {:ok, d_path} = fetch_path_by_id(definition, d_node_id)
       assert length(d_path) == 5
@@ -48,6 +55,8 @@ defmodule Statechart.BuildTest do
     # This should test for the line number
     # Should give suggestions for matching names ("Did you mean ...?")
     test "raises a StatechartCompileError on invalid state names"
+
+    test "raises on duplicate **local** state name"
   end
 
   describe "subchart/2" do

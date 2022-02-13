@@ -10,8 +10,7 @@ defmodule Statechart.Definition.QueryTest do
       defchart do
         defstate :a do
           defstate :b do
-            # TODO Can I make this caps case?
-            :goto_d >>> :d
+            :GOTO_D >>> :d
 
             defstate :c do
               defstate :d do
@@ -23,10 +22,10 @@ defmodule Statechart.Definition.QueryTest do
     end
 
     test "returns ok transition tuple" do
-      definition = Definition.from_module(Sample)
+      {:ok, definition} = Definition.fetch_from_module(Sample)
       {:ok, 4 = node_id} = fetch_node_id_by_state(definition, :c)
 
-      assert {:ok, %Transition{}} = fetch_transition(definition, node_id, :goto_d)
+      assert {:ok, %Transition{}} = fetch_transition(definition, node_id, :GOTO_D)
     end
   end
 end

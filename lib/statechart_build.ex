@@ -73,8 +73,13 @@ defmodule Statechart.Build do
   @doc false
   @spec __defchart_enter__(Macro.Env.t()) :: :ok
   def __defchart_enter__(%Macro.Env{} = env) do
+    if Module.has_attribute?(env.module, :__sc_defchart__) do
+      raise Statechart.CompileError, "Only one defchart call may be made per module"
+    end
+
     statechart_def = Definition.from_env(env)
     Module.register_attribute(env.module, :__sc_build_step__, [])
+    Module.put_attribute(env.module, :__sc_defchart__, nil)
     Acc.put_new(env, statechart_def)
     :ok
   end

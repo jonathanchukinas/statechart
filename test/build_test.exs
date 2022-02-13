@@ -3,23 +3,36 @@ defmodule Statechart.BuildTest do
   use Statechart.Definition
 
   describe "defchart/2" do
-    defmodule Sample do
-      use Statechart
+    # defmodule Sample do
+    #   use Statechart
 
-      defchart do
-        defstate :on, do: :flip >>> :off
+    #   defchart do
+    #     defstate :on, do: :flip >>> :off
 
-        defstate :off do
-          :flip >>> :on
+    #     defstate :off do
+    #       :flip >>> :on
+    #     end
+    #   end
+    # end
+
+    test "raises if defchart was already called in this module" do
+      assert_raise Statechart.CompileError, ~r/Only one defchart/, fn ->
+        defmodule InvalidDoubleDefchart do
+          use Statechart
+          defchart do: nil
+          defchart do: nil
         end
       end
     end
 
-    test "only one statechart is allowed per module"
-
     test "injects a definition/0 function into caller" do
-      assert {:definition, 0} in Sample.__info__(:functions)
-      assert match?(%Definition{}, Sample.definition())
+      defmodule SingleDefchart do
+        use Statechart
+        defchart do: nil
+      end
+
+      assert {:definition, 0} in SingleDefchart.__info__(:functions)
+      assert match?(%Definition{}, SingleDefchart.definition())
     end
   end
 

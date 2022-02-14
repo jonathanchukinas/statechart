@@ -16,7 +16,7 @@ defmodule Statechart.BuildTest do
     # end
 
     test "raises if defchart was already called in this module" do
-      assert_raise Statechart.CompileError, ~r/Only one defchart/, fn ->
+      assert_raise StatechartCompileError, ~r/Only one defchart/, fn ->
         defmodule InvalidDoubleDefchart do
           use Statechart
           defchart do: nil
@@ -70,7 +70,7 @@ defmodule Statechart.BuildTest do
     test "raises a StatechartCompileError on invalid state names"
 
     test "raises on duplicate **local** state name" do
-      assert_raise Statechart.CompileError, fn ->
+      assert_raise StatechartCompileError, fn ->
         defmodule DuplicateLocalNodeName do
           use Statechart
 

@@ -75,7 +75,7 @@ defmodule Statechart.Build do
   @spec __defchart_enter__(Macro.Env.t()) :: :ok
   def __defchart_enter__(%Macro.Env{} = env) do
     if Module.has_attribute?(env.module, :__sc_defchart__) do
-      raise Statechart.CompileError, "Only one defchart call may be made per module"
+      raise StatechartCompileError, "Only one defchart call may be made per module"
     end
 
     statechart_def = Definition.from_env(env)
@@ -132,11 +132,9 @@ defmodule Statechart.Build do
       |> Acc.put_current_id(new_node_id)
     else
       [node_with_same_name | _tail] ->
-        # TODO rename Metadata.Access
         {:ok, line_number} = MetadataAccess.fetch_line_number(node_with_same_name)
         msg = "A state with name #{name} was already declared on line #{line_number}"
-        # TODO rename StatechartCompileError
-        raise Statechart.CompileError, msg
+        raise StatechartCompileError, msg
     end
 
     :ok

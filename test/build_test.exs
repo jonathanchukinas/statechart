@@ -69,7 +69,18 @@ defmodule Statechart.BuildTest do
     # Should give suggestions for matching names ("Did you mean ...?")
     test "raises a StatechartCompileError on invalid state names"
 
-    test "raises on duplicate **local** state name"
+    test "raises on duplicate **local** state name" do
+      assert_raise Statechart.CompileError, fn ->
+        defmodule DuplicateLocalNodeName do
+          use Statechart
+
+          defchart do
+            defstate :on
+            defstate :on
+          end
+        end
+      end
+    end
   end
 
   describe "subchart/2" do

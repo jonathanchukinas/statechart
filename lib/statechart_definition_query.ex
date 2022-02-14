@@ -55,13 +55,13 @@ defmodule Statechart.Definition.Query do
   end
 
   @spec local_nodes(t) :: [Node.t()]
-  def local_nodes(%Definition{nodes: nodes} = statechart_def) do
-    {:ok, tree_module} = MetadataAccess.fetch_module(statechart_def)
+  def local_nodes(definition) do
+    definition |> do_local_nodes |> Enum.to_list()
+  end
 
-    Enum.filter(nodes, fn node ->
-      {:ok, node_module} = MetadataAccess.fetch_module(node)
-      tree_module == node_module
-    end)
+  @spec local_nodes_by_name(t, Node.name()) :: [Node.t()]
+  def local_nodes_by_name(definition, name) do
+    definition |> do_local_nodes |> Enum.filter(&(Node.name(&1) == name))
   end
 
   @spec fetch_node_id_by_state(t, State.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
@@ -96,5 +96,17 @@ defmodule Statechart.Definition.Query do
       nil -> {:error, :event_not_found}
       transition -> {:ok, transition}
     end
+  end
+
+  #####################################
+  # CONVERTERS (private)
+
+  defp do_local_nodes(%Definition{nodes: nodes} = statechart_def) do
+    {:ok, tree_module} = MetadataAccess.fetch_module(statechart_def)
+
+    Stream.filter(nodes, fn node ->
+      {:ok, node_module} = MetadataAccess.fetch_module(node)
+      tree_module == node_module
+    end)
   end
 end

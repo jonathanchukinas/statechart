@@ -5,6 +5,7 @@ defmodule Statechart.Build do
   alias Statechart.Build.Acc
   alias Statechart.Event
   alias Statechart.Metadata
+  alias Statechart.MetadataAccess
 
   @build_steps ~w/
     insert_nodes
@@ -94,6 +95,12 @@ defmodule Statechart.Build do
   #####################################
   # DEFSTATE
 
+  defmacro defstate(name) do
+    quote do
+      defstate unquote(name), do: nil
+    end
+  end
+
   @doc """
   Create a statechart node.
 
@@ -114,19 +121,23 @@ defmodule Statechart.Build do
   @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name()) :: :ok
   def __defstate_enter__(:insert_nodes = _build_step, env, name) do
     new_node = Node.new(name, metadata: Metadata.from_env(env))
-
+    old_definition = Acc.statechart_def(env)
     parent_id = Acc.current_id(env)
 
-    {:ok, updated_statechart_def} =
+    with [] <- local_nodes_by_name(old_definition, name),
+         {:ok, new_definition} <- insert(old_definition, new_node, parent_id),
+         {:ok, new_node_id} <- fetch_node_id_by_state(new_definition, name) do
       env
-      |> Acc.statechart_def()
-      |> insert(new_node, parent_id)
-
-    {:ok, new_node_id} = fetch_node_id_by_state(updated_statechart_def, name)
-
-    env
-    |> Acc.put_current_id(new_node_id)
-    |> Acc.put_statechart_def(updated_statechart_def)
+      |> Acc.put_statechart_def(new_definition)
+      |> Acc.put_current_id(new_node_id)
+    else
+      [node_with_same_name | _tail] ->
+        # TODO rename Metadata.Access
+        {:ok, line_number} = MetadataAccess.fetch_line_number(node_with_same_name)
+        msg = "A state with name #{name} was already declared on line #{line_number}"
+        # TODO rename StatechartCompileError
+        raise Statechart.CompileError, msg
+    end
 
     :ok
   end

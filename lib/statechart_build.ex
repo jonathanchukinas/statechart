@@ -6,6 +6,7 @@ defmodule Statechart.Build do
   alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.MetadataAccess
+  alias Statechart.Transition
 
   @build_steps ~w/
     insert_nodes
@@ -120,11 +121,12 @@ defmodule Statechart.Build do
   @doc false
   @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name()) :: :ok
   def __defstate_enter__(:insert_nodes = _build_step, env, name) do
-    new_node = Node.new(name, metadata: Metadata.from_env(env))
     old_definition = Acc.statechart_def(env)
     parent_id = Acc.current_id(env)
 
     with [] <- local_nodes_by_name(old_definition, name),
+         true <- is_atom(name),
+         new_node = Node.new(name, metadata: Metadata.from_env(env)),
          {:ok, new_definition} <- insert(old_definition, new_node, parent_id),
          {:ok, new_node_id} <- fetch_node_id_by_state(new_definition, name) do
       env
@@ -133,14 +135,23 @@ defmodule Statechart.Build do
     else
       [node_with_same_name | _tail] ->
         {:ok, line_number} = MetadataAccess.fetch_line_number(node_with_same_name)
-        msg = "A state with name #{name} was already declared on line #{line_number}"
+        msg = "a state with name '#{name}' was already declared on line #{line_number}"
+        raise StatechartCompileError, msg
+
+      {:error, reason} ->
+        raise reason
+
+      false ->
+        msg = "expected defstate arg1 to be an atom, got: #{inspect(name)}"
         raise StatechartCompileError, msg
     end
 
     :ok
   end
 
-  def __defstate_enter__(_build_step, _env, _name) do
+  def __defstate_enter__(_build_step, env, _name) do
+    {:ok, node} = fetch_node_by_metadata(Acc.statechart_def(env), Metadata.from_env(env))
+    Acc.put_current_id(env, Node.id(node))
     :ok
   end
 
@@ -177,12 +188,26 @@ defmodule Statechart.Build do
     statechart_def = Acc.statechart_def(env)
     node_id = Acc.current_id(env)
 
-    with :ok <- Event.validate(event),
-         {:ok, destination_node} <- fetch_node_by_name(statechart_def, destination_node_name),
-         update_fn =
-           &Node.put_transition(&1, event, Node.id(destination_node), Metadata.from_env(env)),
+    # TODO return type should be ok or error
+    unless :ok == Event.validate(event) do
+      raise StatechartCompileError, "expect event to be an atom or module, got: #{inspect(event)}"
+    end
+
+    # TODO return type should be :ok or :error
+    if transition = find_transition_among_path_and_ancestors(statechart_def, node_id, event) do
+      msg =
+        "events must be unique within a node and among its path and descendents, the event " <>
+          inspect(event) <>
+          " is already registered on line " <>
+          inspect(MetadataAccess.fetch_line_number(transition))
+
+      raise StatechartCompileError, msg
+    end
+
+    with {:ok, destination_id} <- fetch_node_id_by_state(statechart_def, destination_node_name),
+         transition = Transition.new(event, destination_id, Metadata.from_env(env)),
          {:ok, statechart_def} <-
-           update_node_by_id(statechart_def, node_id, update_fn) do
+           update_node_by_id(statechart_def, node_id, &Node.put_transition(&1, transition)) do
       Acc.put_statechart_def(env, statechart_def)
       :ok
     else

@@ -27,6 +27,15 @@ defmodule Statechart.Transition do
     end
   end
 
+  defimpl Statechart.Metadata.HasMetadata do
+    def fetch(%Transition{metadata: metadata}) do
+      case metadata do
+        %Metadata{} -> {:ok, metadata}
+        _ -> {:error, :missing_metadata}
+      end
+    end
+  end
+
   defimpl Statechart.HasIdRefs do
     def incr_id_refs(%Transition{destination_node_id: id} = transition, start_id, addend) do
       if start_id <= id do

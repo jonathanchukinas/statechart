@@ -84,17 +84,65 @@ defmodule Statechart.Definition.Query do
     end
   end
 
-  @spec fetch_transition(Definition.t(), Node.id(), Event.t()) ::
+  @spec get_transition(t, Node.id(), Event.t()) :: Transition.t() | nil
+  def get_transition(definition, node_id, event) do
+    with {:ok, nodes} <-
+           Tree.fetch_path_by_id(definition, node_id)
+           |> IO.inspect(label: "#{event} to #{node_id}") do
+      nodes
+      |> Stream.flat_map(&Node.transitions/1)
+      |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))
+    else
+      _ -> nil
+    end
+  end
+
+  # TODO needed?
+  @spec fetch_transition(t, Node.id(), Event.t()) ::
           {:ok, Transition.t()} | {:error, :event_not_found}
   def fetch_transition(definition, node_id, event) do
-    {:ok, nodes} = Tree.fetch_path_by_id(definition, node_id)
-
-    nodes
-    |> Stream.flat_map(&Node.transitions/1)
-    |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))
-    |> case do
+    case get_transition(definition, node_id, event) do
       nil -> {:error, :event_not_found}
       transition -> {:ok, transition}
+    end
+  end
+
+  # TODO needed?
+  @doc """
+  Confirm that this event doesn't already exist in the path/ancestors.
+  """
+  @spec validate_event_by_id(t, Event.t(), Node.id()) :: :ok | {:error, Transition.t()}
+  def validate_event_by_id(definition, event, id) do
+    case fetch_transition_by_id_and_event(definition, id, event) do
+      {:ok, _transition} -> {:error, :duplicate_event}
+      {:error, _reason} -> :ok
+    end
+  end
+
+  # TODO doc and spec
+  def find_transition_among_path_and_ancestors(definition, id, event) do
+    case fetch_transition_by_id_and_event(definition, id, event) do
+      {:ok, %Transition{} = transition} -> transition
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Look for an event among a node's ancestors and path, which includes itself.
+  """
+  @spec fetch_transition_by_id_and_event(t, Node.id(), Event.t()) ::
+          {:ok, Transition.t()} | {:error, atom}
+  def fetch_transition_by_id_and_event(definition, id, event) do
+    with {:ok, nodes} <- Tree.fetch_path_and_descendents_by_id(definition, id) do
+      nodes
+      |> Stream.flat_map(&Node.transitions/1)
+      |> Enum.find(&(Transition.event(&1) == event))
+      |> case do
+        %Transition{} = transition -> {:ok, transition}
+        nil -> {:error, :transition_not_found}
+      end
+    else
+      {:error, _reason} = error -> error
     end
   end
 

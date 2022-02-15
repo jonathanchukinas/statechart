@@ -60,10 +60,16 @@ defmodule Statechart.Node do
     %__MODULE__{node | lft: lft + addend, rgt: rgt + addend}
   end
 
+  @spec put_transition(t, Transition.t()) :: t
+  def put_transition(%__MODULE__{} = node, %Transition{} = transition) do
+    Map.update!(node, :transitions, &[transition | &1])
+  end
+
+  # TODO delete?
   @spec put_transition(t, Event.t(), id, Metadata.t()) :: t
   def put_transition(%__MODULE__{} = node, event, destination_node_id, metadata) do
     transition = Transition.new(event, destination_node_id, metadata)
-    Map.update!(node, :transitions, &[transition | &1])
+    put_transition(node, transition)
   end
 
   #####################################

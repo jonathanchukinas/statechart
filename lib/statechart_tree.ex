@@ -1,4 +1,15 @@
 defmodule Statechart.Tree do
+  @moduledoc """
+  Some terminology:
+
+  - path: a list of nodes tracing a path from root to the node in question
+  - ancestors: the `path` list without the last node
+  - descendents: all nodes that have the current node as one of their ancestors
+  - parent: the parent of the node in question
+  - children: ancestors, but only one level deep
+  - TODO is there a name for path + descendents? It's awkward referring to this as "path and descendents"
+  """
+
   alias Statechart.Node
   alias Statechart.Tree.Insertable
   alias Statechart.Tree.IsTree
@@ -82,6 +93,7 @@ defmodule Statechart.Tree do
   @spec contains_id?(t, Node.id()) :: boolean
   def contains_id?(tree, id), do: id in 1..max_node_id(tree)
 
+  # TODO I think I have this named wrong. It should be fetch_descendents_by_id?
   @spec fetch_ancestors_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
   def fetch_ancestors_by_id(tree, parent_id) do
     tree
@@ -95,6 +107,17 @@ defmodule Statechart.Tree do
         rgt = Node.rgt(parent)
         ancestors = Enum.take_while(rest, fn node -> Node.rgt(node) < rgt end)
         {:ok, ancestors}
+    end
+  end
+
+  @spec fetch_path_and_descendents_by_id(t, Node.id()) :: {:ok, [Node.t()]}
+  def fetch_path_and_descendents_by_id(tree, node_id) do
+    with {:ok, path} <- fetch_path_by_id(tree, node_id) |> IO.inspect(label: :path),
+         # TODO DRYify this?
+         {:ok, ancestors} <- fetch_ancestors_by_id(tree, node_id) |> IO.inspect(label: :descen) do
+      {:ok, path ++ ancestors}
+    else
+      {:error, _reason} = error -> error
     end
   end
 
@@ -210,6 +233,7 @@ defmodule Statechart.Tree do
   #####################################
   # CONVERTERS (private)
 
+  # TODO what does this do?
   @spec nodes_up_to_and_incl_node_id(t, Node.id()) :: Enumerable.t()
   defp nodes_up_to_and_incl_node_id(tree, id) do
     tree

@@ -86,9 +86,7 @@ defmodule Statechart.Definition.Query do
 
   @spec get_transition(t, Node.id(), Event.t()) :: Transition.t() | nil
   def get_transition(definition, node_id, event) do
-    with {:ok, nodes} <-
-           Tree.fetch_path_by_id(definition, node_id)
-           |> IO.inspect(label: "#{event} to #{node_id}") do
+    with {:ok, nodes} <- Tree.fetch_path_by_id(definition, node_id) do
       nodes
       |> Stream.flat_map(&Node.transitions/1)
       |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))

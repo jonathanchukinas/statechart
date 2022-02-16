@@ -11,9 +11,10 @@ defmodule Statechart.Build do
   @build_steps ~w/
     insert_nodes
     insert_transitions
+    insert_subcharts
     /a
 
-  @type build_step :: :insert_nodes | :insert_transitions
+  @type build_step :: :insert_nodes | :insert_transitions | :insert_subcharts
 
   #####################################
   # DEFCHART
@@ -124,29 +125,19 @@ defmodule Statechart.Build do
     old_definition = Acc.statechart_def(env)
     parent_id = Acc.current_id(env)
 
-    with [] <- local_nodes_by_name(old_definition, name),
-         true <- is_atom(name),
+    with :ok <- validate_name!(old_definition, name),
          new_node = Node.new(name, metadata: Metadata.from_env(env)),
          {:ok, new_definition} <- insert(old_definition, new_node, parent_id),
          {:ok, new_node_id} <- fetch_node_id_by_state(new_definition, name) do
       env
       |> Acc.put_statechart_def(new_definition)
       |> Acc.put_current_id(new_node_id)
-    else
-      [node_with_same_name | _tail] ->
-        {:ok, line_number} = MetadataAccess.fetch_line_number(node_with_same_name)
-        msg = "a state with name '#{name}' was already declared on line #{line_number}"
-        raise StatechartCompileError, msg
 
+      :ok
+    else
       {:error, reason} ->
         raise reason
-
-      false ->
-        msg = "expected defstate arg1 to be an atom, got: #{inspect(name)}"
-        raise StatechartCompileError, msg
     end
-
-    :ok
   end
 
   def __defstate_enter__(_build_step, env, _name) do
@@ -217,5 +208,73 @@ defmodule Statechart.Build do
 
   def __transition__(_build_step, _env, _event, _destination_node_name) do
     :ok
+  end
+
+  #####################################
+  # TRANSITION
+
+  defmacro subchart(name, module) do
+    quote bind_quoted: [name: name, module: module] do
+      Build.__subchart__(@__sc_build_step__, __ENV__, name, module)
+    end
+  end
+
+  def __subchart__(:insert_subcharts, env, name, module) do
+    metadata = Metadata.from_env(env)
+
+    update_child_root = fn %Node{} = node ->
+      %Node{node | name: name, metadata: metadata}
+    end
+
+    with parent_definition = Acc.statechart_def(env),
+         parent_id = Acc.current_id(env),
+         :ok <- validate_name!(parent_definition, name),
+         child_definition <- fetch_definition!(module, Metadata.line(metadata)),
+         new_child_definition = update_root(child_definition, update_child_root),
+         {:ok, new_parent_definition} <-
+           insert(parent_definition, new_child_definition, parent_id) do
+      Acc.put_statechart_def(env, new_parent_definition)
+    end
+
+    :ok
+  end
+
+  def __subchart__(_build_step, _env, _name, _module) do
+    :ok
+  end
+
+  #####################################
+  # HELPERS
+
+  @doc false
+  @spec validate_name!(Definition.t(), Node.name()) :: :ok | no_return
+  defp validate_name!(definition, name) do
+    unless is_atom(name) do
+      msg = "expected defstate arg1 to be an atom, got: #{inspect(name)}"
+      raise StatechartCompileError, msg
+    end
+
+    case local_nodes_by_name(definition, name) do
+      [] ->
+        :ok
+
+      [node_with_same_name | _tail] ->
+        {:ok, line_number} = MetadataAccess.fetch_line_number(node_with_same_name)
+        msg = "a state with name '#{name}' was already declared on line #{line_number}"
+        raise StatechartCompileError, msg
+    end
+  end
+
+  # TODO move other validations to this section and rename it
+  # TODO use this elsewhere
+  defp fetch_definition!(module, line_number) do
+    case Definition.fetch_from_module(module) do
+      {:ok, definition} ->
+        definition
+
+      _ ->
+        raise StatechartCompileError,
+              "subchart expects a module that has a definition/0 function, on line #{line_number} got: #{module}"
+    end
   end
 end

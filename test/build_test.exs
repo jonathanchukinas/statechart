@@ -99,7 +99,29 @@ defmodule Statechart.BuildTest do
   end
 
   describe "subchart/2" do
-    test "successfully inserts a sub-chart into a parent chart"
+    test "successfully inserts a sub-chart into a parent chart" do
+      defmodule SubChart do
+        use Statechart
+
+        defchart do
+          defstate :on
+          defstate :off
+        end
+      end
+
+      defmodule MainChart do
+        use Statechart
+
+        defchart do
+          defstate :flarb
+          subchart(:flazzl, SubChart)
+        end
+      end
+
+      {:ok, definition} = Definition.fetch_from_module(MainChart)
+      assert length(fetch_nodes!(definition)) == 5
+      assert {:ok, 3} = fetch_node_id_by_state(definition, :flazzl)
+    end
   end
 
   # This should test for the line number

@@ -47,7 +47,7 @@ defmodule Statechart.Tree do
         Enum.map(new_nodes, fn %Node{} = node ->
           node
           |> Node.add_to_lft_rgt(new_nodes_addend)
-          |> Statechart.HasIdRefs.incr_id_refs(0, starting_new_id)
+          |> Statechart.HasIdRefs.incr_id_refs(0, starting_new_id - Insertable.min_id(insertable))
         end)
 
       nodes =
@@ -112,9 +112,9 @@ defmodule Statechart.Tree do
 
   @spec fetch_path_and_descendents_by_id(t, Node.id()) :: {:ok, [Node.t()]}
   def fetch_path_and_descendents_by_id(tree, node_id) do
-    with {:ok, path} <- fetch_path_by_id(tree, node_id) |> IO.inspect(label: :path),
+    with {:ok, path} <- fetch_path_by_id(tree, node_id),
          # TODO DRYify this?
-         {:ok, ancestors} <- fetch_ancestors_by_id(tree, node_id) |> IO.inspect(label: :descen) do
+         {:ok, ancestors} <- fetch_ancestors_by_id(tree, node_id) do
       {:ok, path ++ ancestors}
     else
       {:error, _reason} = error -> error
@@ -211,6 +211,11 @@ defmodule Statechart.Tree do
     else
       {:error, _type} = error -> error
     end
+  end
+
+  @spec min_node_id(t) :: Node.id()
+  def min_node_id(_tree) do
+    @starting_node_id
   end
 
   @spec max_node_id(t) :: Node.id()

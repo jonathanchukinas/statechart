@@ -52,8 +52,8 @@ defmodule Statechart.Build do
     Acc.delete_attribute(env)
 
     quote do
-      @spec definition() :: t
-      def definition, do: unquote(Macro.escape(statechart_def))
+      @spec __chart__() :: t
+      def __chart__, do: unquote(Macro.escape(statechart_def))
     end
   end
 

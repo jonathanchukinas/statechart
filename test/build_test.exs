@@ -31,8 +31,8 @@ defmodule Statechart.BuildTest do
         defchart do: nil
       end
 
-      assert {:definition, 0} in SingleDefchart.__info__(:functions)
-      assert match?(%Chart{}, SingleDefchart.definition())
+      # TODO Investigate all other __chart__ calls
+      assert {:ok, %Chart{}} = Chart.fetch_from_module(SingleDefchart)
     end
   end
 

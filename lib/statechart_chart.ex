@@ -31,8 +31,8 @@ defmodule Statechart.Chart do
 
   @spec fetch_from_module(module) :: {:ok, t} | {:error, :definition_not_found}
   def fetch_from_module(module) do
-    with true <- {:definition, 0} in module.__info__(:functions),
-         %__MODULE__{} = definition <- module.definition() do
+    with true <- {:__chart__, 0} in module.__info__(:functions),
+         %__MODULE__{} = definition <- module.__chart__() do
       {:ok, definition}
     else
       _ -> {:error, :definition_not_found}

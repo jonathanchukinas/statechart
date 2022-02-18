@@ -55,38 +55,38 @@ defmodule Statechart.Chart.Query do
   end
 
   @spec local_nodes(t) :: [Node.t()]
-  def local_nodes(definition) do
-    definition |> do_local_nodes |> Enum.to_list()
+  def local_nodes(chart) do
+    chart |> do_local_nodes |> Enum.to_list()
   end
 
   @spec local_nodes_by_name(t, Node.name()) :: [Node.t()]
-  def local_nodes_by_name(definition, name) do
-    definition |> do_local_nodes |> Enum.filter(&(Node.name(&1) == name))
+  def local_nodes_by_name(chart, name) do
+    chart |> do_local_nodes |> Enum.filter(&(Node.name(&1) == name))
   end
 
   @spec fetch_id_by_state(t, State.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
-  def fetch_id_by_state(definition, node_id) when is_integer(node_id) do
-    if Tree.contains_id?(definition, node_id), do: {:ok, node_id}, else: {:error, :id_not_found}
+  def fetch_id_by_state(chart, node_id) when is_integer(node_id) do
+    if Tree.contains_id?(chart, node_id), do: {:ok, node_id}, else: {:error, :id_not_found}
   end
 
-  def fetch_id_by_state(definition, node_name) when is_atom(node_name) do
-    case fetch_node_by_name(definition, node_name) do
+  def fetch_id_by_state(chart, node_name) when is_atom(node_name) do
+    case fetch_node_by_name(chart, node_name) do
       {:ok, node} -> {:ok, Node.id(node)}
       {:error, _reason} = error -> error
     end
   end
 
   @spec fetch_id_by_state(t, State.t()) :: Node.id()
-  def fetch_id_by_state(definition, state) do
-    case fetch_id_by_state(definition, state) do
+  def fetch_id_by_state(chart, state) do
+    case fetch_id_by_state(chart, state) do
       {:ok, node_id} -> node_id
       {:error, _reason} -> raise "#{state} not found!"
     end
   end
 
   @spec get_transition(t, Node.id(), Event.t()) :: Transition.t() | nil
-  def get_transition(definition, node_id, event) do
-    with {:ok, nodes} <- Tree.fetch_path_by_id(definition, node_id) do
+  def get_transition(chart, node_id, event) do
+    with {:ok, nodes} <- Tree.fetch_path_by_id(chart, node_id) do
       nodes
       |> Stream.flat_map(&Node.transitions/1)
       |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))
@@ -98,8 +98,8 @@ defmodule Statechart.Chart.Query do
   # TODO needed?
   @spec fetch_transition(t, Node.id(), Event.t()) ::
           {:ok, Transition.t()} | {:error, :event_not_found}
-  def fetch_transition(definition, node_id, event) do
-    case get_transition(definition, node_id, event) do
+  def fetch_transition(chart, node_id, event) do
+    case get_transition(chart, node_id, event) do
       nil -> {:error, :event_not_found}
       transition -> {:ok, transition}
     end
@@ -110,16 +110,16 @@ defmodule Statechart.Chart.Query do
   Confirm that this event doesn't already exist in the path/ancestors.
   """
   @spec validate_event_by_id(t, Event.t(), Node.id()) :: :ok | {:error, Transition.t()}
-  def validate_event_by_id(definition, event, id) do
-    case fetch_transition_by_id_and_event(definition, id, event) do
+  def validate_event_by_id(chart, event, id) do
+    case fetch_transition_by_id_and_event(chart, id, event) do
       {:ok, _transition} -> {:error, :duplicate_event}
       {:error, _reason} -> :ok
     end
   end
 
   # TODO doc and spec
-  def find_transition_among_path_and_ancestors(definition, id, event) do
-    case fetch_transition_by_id_and_event(definition, id, event) do
+  def find_transition_among_path_and_ancestors(chart, id, event) do
+    case fetch_transition_by_id_and_event(chart, id, event) do
       {:ok, %Transition{} = transition} -> transition
       _ -> nil
     end
@@ -130,8 +130,8 @@ defmodule Statechart.Chart.Query do
   """
   @spec fetch_transition_by_id_and_event(t, Node.id(), Event.t()) ::
           {:ok, Transition.t()} | {:error, atom}
-  def fetch_transition_by_id_and_event(definition, id, event) do
-    with {:ok, nodes} <- Tree.fetch_path_and_descendents_by_id(definition, id) do
+  def fetch_transition_by_id_and_event(chart, id, event) do
+    with {:ok, nodes} <- Tree.fetch_path_and_descendents_by_id(chart, id) do
       nodes
       |> Stream.flat_map(&Node.transitions/1)
       |> Enum.find(&(Transition.event(&1) == event))

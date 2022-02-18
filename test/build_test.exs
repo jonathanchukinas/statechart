@@ -16,7 +16,7 @@ defmodule Statechart.BuildTest do
     # end
 
     test "raises if defchart was already called in this module" do
-      assert_raise StatechartCompileError, ~r/Only one defchart/, fn ->
+      assert_raise StatechartBuildError, ~r/Only one defchart/, fn ->
         defmodule InvalidDoubleDefchart do
           use Statechart
           defchart do: nil
@@ -25,6 +25,7 @@ defmodule Statechart.BuildTest do
       end
     end
 
+    # TODO rename this test
     test "injects a definition/0 function into caller" do
       defmodule SingleDefchart do
         use Statechart
@@ -67,16 +68,16 @@ defmodule Statechart.BuildTest do
         end
       end
 
-      {:ok, definition} = Chart.fetch_from_module(Sample)
-      {:ok, 5 = d_node_id} = fetch_id_by_state(definition, :d)
-      {:ok, d_path} = fetch_path_by_id(definition, d_node_id)
+      {:ok, chart} = Chart.fetch_from_module(Sample)
+      {:ok, 5 = d_node_id} = fetch_id_by_state(chart, :d)
+      {:ok, d_path} = fetch_path_by_id(chart, d_node_id)
       assert length(d_path) == 5
       d_path_as_atoms = Enum.map(d_path, &Node.name/1)
       assert d_path_as_atoms == ~w/root a b c d/a
     end
 
-    test "raises a StatechartCompileError on non-atom state names" do
-      assert_raise StatechartCompileError, ~r/expected defstate arg1 to be an atom/, fn ->
+    test "raises a StatechartBuildError on non-atom state names" do
+      assert_raise StatechartBuildError, ~r/expected defstate arg1 to be an atom/, fn ->
         defmodule InvalidStateName do
           use Statechart
           defchart do: defstate(%{})
@@ -85,7 +86,7 @@ defmodule Statechart.BuildTest do
     end
 
     test "raises on duplicate **local** state name" do
-      assert_raise StatechartCompileError, ~r/was already declared on line/, fn ->
+      assert_raise StatechartBuildError, ~r/was already declared on line/, fn ->
         defmodule DuplicateLocalNodeName do
           use Statechart
 
@@ -118,9 +119,9 @@ defmodule Statechart.BuildTest do
         end
       end
 
-      {:ok, definition} = Chart.fetch_from_module(MainChart)
-      assert length(fetch_nodes!(definition)) == 5
-      assert {:ok, 3} = fetch_id_by_state(definition, :flazzl)
+      {:ok, chart} = Chart.fetch_from_module(MainChart)
+      assert length(fetch_nodes!(chart)) == 5
+      assert {:ok, 3} = fetch_id_by_state(chart, :flazzl)
     end
   end
 
@@ -128,12 +129,12 @@ defmodule Statechart.BuildTest do
   # Should give suggestions for matching names ("Did you mean ...?")
   describe ">>>/2" do
     # This should test for the line number
-    test "raises a StatechartCompileError on invalid event names"
+    test "raises a StatechartBuildError on invalid event names"
 
     test "raises if one of node's ancestors already has a transition with this event" do
       # TODO rename StatechartBuildError ?
 
-      assert_raise StatechartCompileError, ~r/events must be unique/, fn ->
+      assert_raise StatechartBuildError, ~r/events must be unique/, fn ->
         defmodule AmbiguousEventInAncestor do
           use Statechart
 

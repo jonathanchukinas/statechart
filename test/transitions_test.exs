@@ -29,9 +29,9 @@ defmodule Statechart.TransitionsTest do
 
   describe "fetch_transition_path/3" do
     test "returns a list of exit/enter node tuples" do
-      {:ok, definition} = Chart.fetch_from_module(Sample)
+      {:ok, chart} = Chart.fetch_from_module(Sample)
       # TODO rename all events to be uppercase
-      {:ok, transition_path} = Transitions.fetch_transition_path(definition, :d, :goto_g)
+      {:ok, transition_path} = Transitions.fetch_transition_path(chart, :d, :goto_g)
 
       transition_path_atoms =
         for {direction, node} <- transition_path, do: {direction, Node.name(node)}

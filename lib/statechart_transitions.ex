@@ -43,8 +43,6 @@ defmodule Statechart.Transitions do
   # Event can mean either the spec given to a chart or
   # it can mean the actual atom or Event struct incoming that drives a state change
   # a Transition is a combo of Event and target id
-  #
-  # TODO on Transition, rename target_id
   defp fetch_target_id(chart, current_id, event) do
     with {:ok, transition} <- fetch_transition(chart, current_id, event),
          # TODO rename this to Transition.target_id/1
@@ -59,12 +57,12 @@ defmodule Statechart.Transitions do
   # TODO this should be broken up. Some functionality moves out to fetch_target_id
   @spec fetch_transition_path(Chart.t(), State.t(), Event.t()) ::
           {:ok, [path_item]} | {:error, atom}
-  def fetch_transition_path(definition, state, event) do
-    with {:ok, node_id} <- fetch_id_by_state(definition, state),
-         {:ok, transition} <- fetch_transition(definition, node_id, event),
+  def fetch_transition_path(chart, state, event) do
+    with {:ok, node_id} <- fetch_id_by_state(chart, state),
+         {:ok, transition} <- fetch_transition(chart, node_id, event),
          target_id = Transition.target_id(transition),
-         {:ok, state_path} <- fetch_path_by_id(definition, node_id),
-         {:ok, destination_path} <- fetch_path_by_id(definition, target_id) do
+         {:ok, state_path} <- fetch_path_by_id(chart, node_id),
+         {:ok, destination_path} <- fetch_path_by_id(chart, target_id) do
       {:ok, do_transition_path(state_path, destination_path)}
     end
   end

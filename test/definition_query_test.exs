@@ -22,10 +22,10 @@ defmodule Statechart.Chart.QueryTest do
     end
 
     test "returns ok transition tuple" do
-      {:ok, definition} = Chart.fetch_from_module(Sample)
-      {:ok, 4 = node_id} = fetch_id_by_state(definition, :c)
+      {:ok, chart} = Chart.fetch_from_module(Sample)
+      {:ok, 4 = node_id} = fetch_id_by_state(chart, :c)
 
-      assert {:ok, %Transition{}} = fetch_transition(definition, node_id, :GOTO_D)
+      assert {:ok, %Transition{}} = fetch_transition(chart, node_id, :GOTO_D)
     end
   end
 end

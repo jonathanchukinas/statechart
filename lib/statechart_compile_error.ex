@@ -1,3 +1,3 @@
-defmodule StatechartCompileError do
+defmodule StatechartBuildError do
   defexception [:message]
 end

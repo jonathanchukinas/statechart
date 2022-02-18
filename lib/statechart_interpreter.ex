@@ -11,7 +11,8 @@ defmodule Statechart.Interpreter do
   # TYPES
 
   typedstruct enforce: true do
-    field :definition, module
+    # TODO rename chart_module
+    field :chart, module
     field :context, any, default: nil
   end
 
@@ -23,12 +24,13 @@ defmodule Statechart.Interpreter do
   """
   @spec new(module, any) :: t
   def new(definition_module, context \\ nil) when is_atom(definition_module) do
-    with true <- {:definition, 0} in definition_module.__info__(:functions),
+    with true <- {:chart, 0} in definition_module.__info__(:functions),
          %Chart{} <- definition_from_module(definition_module) do
-      %__MODULE__{definition: definition_module, context: context}
+      %__MODULE__{chart: definition_module, context: context}
     else
       _ ->
-        raise "expected definition_module to be a module whose definition/0 " <>
+        # TODO again, I don't like the direct ref to __chart__
+        raise "expected definition_module to be a module whose __chart__/0 " <>
                 "function returns a Statechart.Chart struct, " <>
                 "got: #{inspect(definition_module)}"
     end
@@ -37,7 +39,7 @@ defmodule Statechart.Interpreter do
   #####################################
   # CONVERTERS
 
-  def definition(%__MODULE__{definition: module}) do
+  def chart(%__MODULE__{chart: module}) do
     definition_from_module(module)
   end
 
@@ -45,6 +47,6 @@ defmodule Statechart.Interpreter do
   # HELPERS
 
   defp definition_from_module(module) do
-    module.definition()
+    module.chart()
   end
 end

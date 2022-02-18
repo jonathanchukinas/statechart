@@ -21,7 +21,7 @@ end
 
 defimpl Statechart.Tree.Insertable, for: Chart do
   @spec nodes(Chart.t()) :: [Node.t()]
-  defdelegate nodes(definition), to: Chart
+  defdelegate nodes(chart), to: Chart
 
-  defdelegate min_id(definition), to: Statechart.Tree, as: :min_node_id
+  defdelegate min_id(chart), to: Statechart.Tree, as: :min_node_id
 end

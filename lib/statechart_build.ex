@@ -77,7 +77,7 @@ defmodule Statechart.Build do
   @spec __defchart_enter__(Macro.Env.t()) :: :ok
   def __defchart_enter__(%Macro.Env{} = env) do
     if Module.has_attribute?(env.module, :__sc_defchart__) do
-      raise StatechartCompileError, "Only one defchart call may be made per module"
+      raise StatechartBuildError, "Only one defchart call may be made per module"
     end
 
     statechart_def = Chart.from_env(env)
@@ -180,7 +180,7 @@ defmodule Statechart.Build do
     node_id = Acc.current_id(env)
 
     unless :ok == Event.validate(event) do
-      raise StatechartCompileError, "expect event to be an atom or module, got: #{inspect(event)}"
+      raise StatechartBuildError, "expect event to be an atom or module, got: #{inspect(event)}"
     end
 
     # TODO return type should be :ok or :error
@@ -191,7 +191,7 @@ defmodule Statechart.Build do
           " is already registered on line " <>
           inspect(MetadataAccess.fetch_line_number(transition))
 
-      raise StatechartCompileError, msg
+      raise StatechartBuildError, msg
     end
 
     with {:ok, destination_id} <- fetch_id_by_state(statechart_def, destination_node_name),
@@ -247,20 +247,20 @@ defmodule Statechart.Build do
 
   @doc false
   @spec validate_name!(Chart.t(), Node.name()) :: :ok | no_return
-  defp validate_name!(definition, name) do
+  defp validate_name!(chart, name) do
     unless is_atom(name) do
       msg = "expected defstate arg1 to be an atom, got: #{inspect(name)}"
-      raise StatechartCompileError, msg
+      raise StatechartBuildError, msg
     end
 
-    case local_nodes_by_name(definition, name) do
+    case local_nodes_by_name(chart, name) do
       [] ->
         :ok
 
       [node_with_same_name | _tail] ->
         {:ok, line_number} = MetadataAccess.fetch_line_number(node_with_same_name)
         msg = "a state with name '#{name}' was already declared on line #{line_number}"
-        raise StatechartCompileError, msg
+        raise StatechartBuildError, msg
     end
   end
 
@@ -268,12 +268,15 @@ defmodule Statechart.Build do
   # TODO use this elsewhere
   defp fetch_definition!(module, line_number) do
     case Chart.fetch_from_module(module) do
-      {:ok, definition} ->
-        definition
+      {:ok, chart} ->
+        chart
 
       _ ->
-        raise StatechartCompileError,
-              "subchart expects a module that has a definition/0 function, on line #{line_number} got: #{module}"
+        raise StatechartBuildError,
+              # TODO this error message is specific to subchart/?, but is down here with the helpers.
+              # Either move it up to subchart section or make it more generic
+              # I don't like how it mentions __chart__/0, which is supposed to be "invisible" to user
+              "subchart expects a module that has a __chart__/0 function, on line #{line_number} got: #{module}"
     end
   end
 end

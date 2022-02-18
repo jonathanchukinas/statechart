@@ -1,3 +1,5 @@
+# TODO test for e.g. defstate called out of place
+
 defmodule Statechart.BuildTest do
   use ExUnit.Case
   use Statechart.Chart
@@ -131,9 +133,8 @@ defmodule Statechart.BuildTest do
     # This should test for the line number
     test "raises a StatechartBuildError on invalid event names"
 
+    # TODO test for self, path, and ancestors
     test "raises if one of node's ancestors already has a transition with this event" do
-      # TODO rename StatechartBuildError ?
-
       assert_raise StatechartBuildError, ~r/events must be unique/, fn ->
         defmodule AmbiguousEventInAncestor do
           use Statechart

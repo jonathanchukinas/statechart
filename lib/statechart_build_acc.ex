@@ -1,4 +1,5 @@
 defmodule Statechart.Build.Acc do
+  @doc false
   use TypedStruct
   alias Statechart.Chart
   alias Statechart.Node

@@ -1,4 +1,24 @@
 defmodule Statechart.Build do
+  @moduledoc """
+  Macros for building a statechart.
+
+  `use Statechart, :chart` makes `defchart/2` available to
+
+  The only macro allowed to be called initially is `defchart/2`.
+  Even this can only be called once per module.
+  The other macros have limited scopes where they are allowed to be called.
+  `defstate/1`, `defstate/2`, `subchart/2` can be called anywhere **within**
+  a `defchart/2` block, including within `defstate/2` blocks.
+  `>>>/2` must occur within `defstate/2` blocks.
+
+  These macros provide many compile checks.
+  For example, if you try to define a `:hello` state twice,
+  a `StatechartBuildError` exception will raise.
+  """
+
+  # TODO implement a `transition/2` macro. `>>>/2` will be a shorthand for it.
+  # TODO implement `use Statechart, :chart`
+
   use TypedStruct
   use Statechart.Chart
   alias __MODULE__
@@ -6,6 +26,7 @@ defmodule Statechart.Build do
   alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.MetadataAccess
+  alias Statechart.State
   alias Statechart.Transition
 
   @build_steps ~w/
@@ -19,6 +40,12 @@ defmodule Statechart.Build do
   #####################################
   # DEFCHART
 
+  @doc """
+  Create and register a statechart to this module.
+
+  This module can be passed into `Statechart.Transitions` and `Statechart.Interpreter` functions.
+  """
+  @spec defchart(Keyword.t(), any) :: any
   defmacro defchart(opts \\ [], do: block) do
     ast = Build.__defchart__(block, opts)
 
@@ -164,6 +191,10 @@ defmodule Statechart.Build do
   #####################################
   # TRANSITION
 
+  @doc """
+  Register a transtion from an event and target state.
+  """
+  @spec Event.registration() >>> State.t() :: :ok
   defmacro event >>> destination_node_name do
     unless :ok == Event.validate(event) do
       raise CompileError, description: "#{event} is not a valid event"
@@ -183,7 +214,6 @@ defmodule Statechart.Build do
       raise StatechartBuildError, "expect event to be an atom or module, got: #{inspect(event)}"
     end
 
-    # TODO return type should be :ok or :error
     if transition = find_transition_among_path_and_ancestors(statechart_def, node_id, event) do
       msg =
         "events must be unique within a node and among its path and descendents, the event " <>
@@ -212,6 +242,9 @@ defmodule Statechart.Build do
   #####################################
   # TRANSITION
 
+  @doc """
+  Inject a chart defined in another module.
+  """
   defmacro subchart(name, module) do
     quote bind_quoted: [name: name, module: module] do
       Build.__subchart__(@__sc_build_step__, __ENV__, name, module)
@@ -264,8 +297,10 @@ defmodule Statechart.Build do
     end
   end
 
-  # TODO move other validations to this section and rename it
-  # TODO use this elsewhere
+  #####################################
+  # VALIDATION
+
+  # CONSIDER making this specific to subchart
   defp fetch_definition!(module, line_number) do
     case Chart.fetch_from_module(module) do
       {:ok, chart} ->
@@ -273,10 +308,7 @@ defmodule Statechart.Build do
 
       _ ->
         raise StatechartBuildError,
-              # TODO this error message is specific to subchart/?, but is down here with the helpers.
-              # Either move it up to subchart section or make it more generic
-              # I don't like how it mentions __chart__/0, which is supposed to be "invisible" to user
-              "subchart expects a module that has a __chart__/0 function, on line #{line_number} got: #{module}"
+              "the module #{module} on line #{line_number} does not define a Statechart.Chart.t struct. See `use Statechart`"
     end
   end
 end

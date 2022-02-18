@@ -2,8 +2,8 @@ defmodule Statechart.Tree do
   @moduledoc """
   Some terminology:
 
-  - path: a list of nodes tracing a path from root to the node in question
-  - ancestors: the `path` list without the last node
+  - `t:path/0`: a list of nodes tracing a path from root to the node in question
+  - ancestors: the `t:path/0` list minus the last node
   - descendents: all nodes that have the current node as one of their ancestors
   - parent: the parent of the node in question
   - children: ancestors, but only one level deep
@@ -16,6 +16,10 @@ defmodule Statechart.Tree do
 
   @type t :: IsTree.t()
 
+  @typedoc """
+  This is the line of nodes from root to the node in question.
+  """
+  @type path :: [Node.t()]
   @starting_node_id 1
 
   #####################################

@@ -2,7 +2,6 @@ alias Statechart.Node
 alias Statechart.Chart
 
 defprotocol Statechart.Tree.Insertable do
-  @moduledoc false
   # Trees can have individual nodes or entire subtrees inserted into them.
   # This protocol defines the interface for these two types of "insertables".
   @spec nodes(t) :: [Node.maybe_not_inserted()]

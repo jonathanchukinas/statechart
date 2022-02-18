@@ -1,6 +1,4 @@
 defprotocol Statechart.Tree.IsTree do
-  @moduledoc false
-
   alias Statechart.Node
 
   # REDUCERS

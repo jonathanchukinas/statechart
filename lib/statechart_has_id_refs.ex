@@ -1,9 +1,7 @@
 defprotocol Statechart.HasIdRefs do
-  @moduledoc """
-  When a node or tree is inserted into a tree, its local ids will have be incremented.
-
-  Any ids smaller that `start_id` will be left alone.
-  """
+  @moduledoc false
+  # When a node or tree is inserted into a tree, its local ids will have be incremented.
+  # Any ids smaller that `start_id` will be left alone.
 
   @type id :: pos_integer
 

@@ -1,12 +1,12 @@
 defmodule Statechart.Build.Acc do
   use TypedStruct
-  alias Statechart.Definition
+  alias Statechart.Chart
   alias Statechart.Node
   alias Statechart.Tree
   @attr :__sc_acc__
 
   typedstruct enforce: true do
-    field :statechart_def, Definition.t()
+    field :statechart_def, Chart.t()
     field :current_node_id, Node.id()
   end
 
@@ -35,7 +35,7 @@ defmodule Statechart.Build.Acc do
 
   # CONVERTERS
 
-  @spec statechart_def(Macro.Env.t()) :: Definition.t()
+  @spec statechart_def(Macro.Env.t()) :: Chart.t()
   def statechart_def(%Macro.Env{module: module}) do
     module
     |> Module.get_attribute(@attr)

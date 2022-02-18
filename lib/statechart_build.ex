@@ -1,6 +1,6 @@
 defmodule Statechart.Build do
   use TypedStruct
-  use Statechart.Definition
+  use Statechart.Chart
   alias __MODULE__
   alias Statechart.Build.Acc
   alias Statechart.Event
@@ -63,12 +63,12 @@ defmodule Statechart.Build do
     case nil do
       nil ->
         quote do
-          @type t :: Definition.t()
+          @type t :: Chart.t()
         end
 
         # type ->
         #   quote do
-        #     @type t :: Definition.t(unquote(type))
+        #     @type t :: Chart.t(unquote(type))
         #   end
     end
   end
@@ -80,7 +80,7 @@ defmodule Statechart.Build do
       raise StatechartCompileError, "Only one defchart call may be made per module"
     end
 
-    statechart_def = Definition.from_env(env)
+    statechart_def = Chart.from_env(env)
     Module.register_attribute(env.module, :__sc_build_step__, [])
     Module.put_attribute(env.module, :__sc_defchart__, nil)
     Acc.put_new(env, statechart_def)
@@ -128,7 +128,7 @@ defmodule Statechart.Build do
     with :ok <- validate_name!(old_definition, name),
          new_node = Node.new(name, metadata: Metadata.from_env(env)),
          {:ok, new_definition} <- insert(old_definition, new_node, parent_id),
-         {:ok, new_node_id} <- fetch_node_id_by_state(new_definition, name) do
+         {:ok, new_node_id} <- fetch_id_by_state(new_definition, name) do
       env
       |> Acc.put_statechart_def(new_definition)
       |> Acc.put_current_id(new_node_id)
@@ -165,7 +165,7 @@ defmodule Statechart.Build do
   # TRANSITION
 
   defmacro event >>> destination_node_name do
-    if :ok != Event.validate(event) do
+    unless :ok == Event.validate(event) do
       raise CompileError, description: "#{event} is not a valid event"
     end
 
@@ -179,7 +179,6 @@ defmodule Statechart.Build do
     statechart_def = Acc.statechart_def(env)
     node_id = Acc.current_id(env)
 
-    # TODO return type should be ok or error
     unless :ok == Event.validate(event) do
       raise StatechartCompileError, "expect event to be an atom or module, got: #{inspect(event)}"
     end
@@ -195,7 +194,7 @@ defmodule Statechart.Build do
       raise StatechartCompileError, msg
     end
 
-    with {:ok, destination_id} <- fetch_node_id_by_state(statechart_def, destination_node_name),
+    with {:ok, destination_id} <- fetch_id_by_state(statechart_def, destination_node_name),
          transition = Transition.new(event, destination_id, Metadata.from_env(env)),
          {:ok, statechart_def} <-
            update_node_by_id(statechart_def, node_id, &Node.put_transition(&1, transition)) do
@@ -247,7 +246,7 @@ defmodule Statechart.Build do
   # HELPERS
 
   @doc false
-  @spec validate_name!(Definition.t(), Node.name()) :: :ok | no_return
+  @spec validate_name!(Chart.t(), Node.name()) :: :ok | no_return
   defp validate_name!(definition, name) do
     unless is_atom(name) do
       msg = "expected defstate arg1 to be an atom, got: #{inspect(name)}"
@@ -268,7 +267,7 @@ defmodule Statechart.Build do
   # TODO move other validations to this section and rename it
   # TODO use this elsewhere
   defp fetch_definition!(module, line_number) do
-    case Definition.fetch_from_module(module) do
+    case Chart.fetch_from_module(module) do
       {:ok, definition} ->
         definition
 

@@ -67,8 +67,8 @@ defmodule Statechart.Node do
 
   # TODO delete?
   @spec put_transition(t, Event.t(), id, Metadata.t()) :: t
-  def put_transition(%__MODULE__{} = node, event, destination_node_id, metadata) do
-    transition = Transition.new(event, destination_node_id, metadata)
+  def put_transition(%__MODULE__{} = node, event, target_id, metadata) do
+    transition = Transition.new(event, target_id, metadata)
     put_transition(node, transition)
   end
 

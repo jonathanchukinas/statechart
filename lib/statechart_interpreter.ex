@@ -1,11 +1,11 @@
 defmodule Statechart.Interpreter do
   @moduledoc """
-  Provides a persistent interpreter for statecharts defined in a Definition module.
+  Provides a persistent interpreter for statecharts defined in a Chart module.
   """
 
   # use Statechart.Util.GetterStruct
   use TypedStruct
-  alias Statechart.Definition
+  alias Statechart.Chart
 
   #####################################
   # TYPES
@@ -24,12 +24,12 @@ defmodule Statechart.Interpreter do
   @spec new(module, any) :: t
   def new(definition_module, context \\ nil) when is_atom(definition_module) do
     with true <- {:definition, 0} in definition_module.__info__(:functions),
-         %Definition{} <- definition_from_module(definition_module) do
+         %Chart{} <- definition_from_module(definition_module) do
       %__MODULE__{definition: definition_module, context: context}
     else
       _ ->
         raise "expected definition_module to be a module whose definition/0 " <>
-                "function returns a Statechart.Definition struct, " <>
+                "function returns a Statechart.Chart struct, " <>
                 "got: #{inspect(definition_module)}"
     end
   end

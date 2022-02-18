@@ -1,5 +1,5 @@
-defmodule Statechart.Definition.Query do
-  alias Statechart.Definition
+defmodule Statechart.Chart.Query do
+  alias Statechart.Chart
   alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.MetadataAccess
@@ -9,7 +9,7 @@ defmodule Statechart.Definition.Query do
   alias Statechart.Tree
   alias Statechart.Tree.IsTree
 
-  @type t :: Definition.t()
+  @type t :: Chart.t()
 
   #####################################
   # REDUCERS
@@ -64,21 +64,21 @@ defmodule Statechart.Definition.Query do
     definition |> do_local_nodes |> Enum.filter(&(Node.name(&1) == name))
   end
 
-  @spec fetch_node_id_by_state(t, State.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
-  def fetch_node_id_by_state(definition, node_id) when is_integer(node_id) do
+  @spec fetch_id_by_state(t, State.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
+  def fetch_id_by_state(definition, node_id) when is_integer(node_id) do
     if Tree.contains_id?(definition, node_id), do: {:ok, node_id}, else: {:error, :id_not_found}
   end
 
-  def fetch_node_id_by_state(definition, node_name) when is_atom(node_name) do
+  def fetch_id_by_state(definition, node_name) when is_atom(node_name) do
     case fetch_node_by_name(definition, node_name) do
       {:ok, node} -> {:ok, Node.id(node)}
       {:error, _reason} = error -> error
     end
   end
 
-  @spec fetch_node_id_by_state!(t, State.t()) :: Node.id()
-  def fetch_node_id_by_state!(definition, state) do
-    case fetch_node_id_by_state(definition, state) do
+  @spec fetch_id_by_state(t, State.t()) :: Node.id()
+  def fetch_id_by_state(definition, state) do
+    case fetch_id_by_state(definition, state) do
       {:ok, node_id} -> node_id
       {:error, _reason} -> raise "#{state} not found!"
     end
@@ -147,7 +147,7 @@ defmodule Statechart.Definition.Query do
   #####################################
   # CONVERTERS (private)
 
-  defp do_local_nodes(%Definition{nodes: nodes} = statechart_def) do
+  defp do_local_nodes(%Chart{nodes: nodes} = statechart_def) do
     {:ok, tree_module} = MetadataAccess.fetch_module(statechart_def)
 
     Stream.filter(nodes, fn node ->

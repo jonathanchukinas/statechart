@@ -1,5 +1,5 @@
 alias Statechart.Node
-alias Statechart.Definition
+alias Statechart.Chart
 
 defprotocol Statechart.Tree.Insertable do
   @moduledoc false
@@ -19,9 +19,9 @@ defimpl Statechart.Tree.Insertable, for: Node do
   def min_id(node), do: Node.id(node)
 end
 
-defimpl Statechart.Tree.Insertable, for: Definition do
-  @spec nodes(Definition.t()) :: [Node.t()]
-  defdelegate nodes(definition), to: Definition
+defimpl Statechart.Tree.Insertable, for: Chart do
+  @spec nodes(Chart.t()) :: [Node.t()]
+  defdelegate nodes(definition), to: Chart
 
   defdelegate min_id(definition), to: Statechart.Tree, as: :min_node_id
 end

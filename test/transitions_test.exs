@@ -1,6 +1,6 @@
 defmodule Statechart.TransitionsTest do
   use ExUnit.Case
-  use Statechart.Definition
+  use Statechart.Chart
   alias Statechart.Transitions
 
   defmodule Sample do
@@ -29,7 +29,7 @@ defmodule Statechart.TransitionsTest do
 
   describe "fetch_transition_path/3" do
     test "returns a list of exit/enter node tuples" do
-      {:ok, definition} = Definition.fetch_from_module(Sample)
+      {:ok, definition} = Chart.fetch_from_module(Sample)
       # TODO rename all events to be uppercase
       {:ok, transition_path} = Transitions.fetch_transition_path(definition, :d, :goto_g)
 
@@ -52,8 +52,10 @@ defmodule Statechart.TransitionsTest do
   test "an event targetting a branch node must provides a default path to a leaf node"
 
   test "the builder raises on events that target a branch node that doesn't have a default path to a leaf node"
+  # TODO test on_exit and on_enter actions
+  # TODO test for event not in current path
 
-  # TODO rename Definition -> Chart
+
   describe "transition/3" do
     defmodule SimpleToggle do
       use Statechart

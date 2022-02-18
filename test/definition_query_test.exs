@@ -1,6 +1,6 @@
-defmodule Statechart.Definition.QueryTest do
+defmodule Statechart.Chart.QueryTest do
   use ExUnit.Case
-  use Statechart.Definition
+  use Statechart.Chart
   alias Statechart.Transition
 
   describe "fetch_transition/3" do
@@ -22,8 +22,8 @@ defmodule Statechart.Definition.QueryTest do
     end
 
     test "returns ok transition tuple" do
-      {:ok, definition} = Definition.fetch_from_module(Sample)
-      {:ok, 4 = node_id} = fetch_node_id_by_state(definition, :c)
+      {:ok, definition} = Chart.fetch_from_module(Sample)
+      {:ok, 4 = node_id} = fetch_id_by_state(definition, :c)
 
       assert {:ok, %Transition{}} = fetch_transition(definition, node_id, :GOTO_D)
     end

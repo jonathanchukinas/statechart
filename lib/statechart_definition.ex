@@ -1,4 +1,4 @@
-defmodule Statechart.Definition do
+defmodule Statechart.Chart do
   use Statechart.Util.GetterStruct
   alias Statechart.Node
   alias Statechart.Tree
@@ -45,9 +45,9 @@ defmodule Statechart.Definition do
   @doc false
   defmacro __using__(_opts) do
     quote do
-      import Statechart.Definition.Query
+      import Statechart.Chart.Query
       import Statechart.Tree
-      alias Statechart.Definition
+      alias Statechart.Chart
       alias Statechart.Node
     end
   end
@@ -56,13 +56,13 @@ defmodule Statechart.Definition do
   # IMPLEMENTATIONS
 
   defimpl IsTree do
-    alias Statechart.Definition
+    alias Statechart.Chart
 
     def put_nodes(statechart_def, nodes) do
       struct!(statechart_def, nodes: nodes)
     end
 
-    defdelegate fetch_nodes!(statechart_def), to: Definition, as: :nodes
+    defdelegate fetch_nodes!(statechart_def), to: Chart, as: :nodes
   end
 
   defimpl HasMetadata do

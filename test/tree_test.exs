@@ -2,7 +2,7 @@ defmodule Statechart.TreeTest do
   use ExUnit.Case
   use ExUnitProperties
   alias Statechart.Node
-  alias Statechart.Definition
+  alias Statechart.Chart
   alias Statechart.Tree
 
   # properties:
@@ -13,7 +13,7 @@ defmodule Statechart.TreeTest do
   # What's the name of this type of data structure? Make a note of that in the docs
 
   setup_all do
-    empty_tree = Definition.new()
+    empty_tree = Chart.new()
     starting_max_parent_id = Tree.max_node_id(empty_tree)
 
     min_possible_parent_id =

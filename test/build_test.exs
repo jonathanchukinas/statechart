@@ -1,6 +1,6 @@
 defmodule Statechart.BuildTest do
   use ExUnit.Case
-  use Statechart.Definition
+  use Statechart.Chart
 
   describe "defchart/2" do
     # defmodule Sample do
@@ -32,7 +32,7 @@ defmodule Statechart.BuildTest do
       end
 
       assert {:definition, 0} in SingleDefchart.__info__(:functions)
-      assert match?(%Definition{}, SingleDefchart.definition())
+      assert match?(%Chart{}, SingleDefchart.definition())
     end
   end
 
@@ -67,8 +67,8 @@ defmodule Statechart.BuildTest do
         end
       end
 
-      {:ok, definition} = Definition.fetch_from_module(Sample)
-      {:ok, 5 = d_node_id} = fetch_node_id_by_state(definition, :d)
+      {:ok, definition} = Chart.fetch_from_module(Sample)
+      {:ok, 5 = d_node_id} = fetch_id_by_state(definition, :d)
       {:ok, d_path} = fetch_path_by_id(definition, d_node_id)
       assert length(d_path) == 5
       d_path_as_atoms = Enum.map(d_path, &Node.name/1)
@@ -118,9 +118,9 @@ defmodule Statechart.BuildTest do
         end
       end
 
-      {:ok, definition} = Definition.fetch_from_module(MainChart)
+      {:ok, definition} = Chart.fetch_from_module(MainChart)
       assert length(fetch_nodes!(definition)) == 5
-      assert {:ok, 3} = fetch_node_id_by_state(definition, :flazzl)
+      assert {:ok, 3} = fetch_id_by_state(definition, :flazzl)
     end
   end
 

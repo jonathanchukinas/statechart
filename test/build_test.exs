@@ -1,4 +1,9 @@
 # TODO test for e.g. defstate called out of place
+# TODO test that a state cannot be defined twice
+# TODO test that a bad name raises
+# TODO test that target must be a descendent
+# TODO test that the builder checks for transitions that don't resolve in leaf nodes
+# TODO check and test that a default can only be given to a branch node
 
 defmodule Statechart.BuildTest do
   use ExUnit.Case

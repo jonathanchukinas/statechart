@@ -154,7 +154,7 @@ defmodule Statechart.Build do
          {:ok, new_definition} <- insert(old_definition, new_node, parent_id),
          {:ok, new_node_id} <- fetch_id_by_state(new_definition, name) do
       env
-      |> Acc.put_statechart_def(new_definition)
+      |> Acc.put_chart(new_definition)
       |> Acc.put_current_id(new_node_id)
 
       :ok
@@ -164,11 +164,6 @@ defmodule Statechart.Build do
     end
   end
 
-  # TODO test that a state cannot be defined twice
-  # TODO test that a bad name raises
-  # TODO test that target must be a descendent
-  # TODO test that the builder checks for transitions that don't resolve in leaf nodes
-  # TODO check and test that a default can only be given to a branch node
   def __defstate_enter__(:insert_transitions_and_defaults, env, _name, opts) do
     chart = Acc.statechart_def(env)
     {:ok, origin_node} = fetch_node_by_metadata(chart, Metadata.from_env(env))
@@ -181,7 +176,7 @@ defmodule Statechart.Build do
       env
       |> Acc.put_current_id(Node.id(origin_node))
       # TODO rename this to put_chart
-      |> Acc.put_statechart_def(new_chart)
+      |> Acc.put_chart(new_chart)
 
       :ok
     else
@@ -249,7 +244,7 @@ defmodule Statechart.Build do
          transition = Transition.new(event, target_id, Metadata.from_env(env)),
          {:ok, statechart_def} <-
            update_node_by_id(statechart_def, node_id, &Node.put_transition(&1, transition)) do
-      Acc.put_statechart_def(env, statechart_def)
+      Acc.put_chart(env, statechart_def)
       :ok
     else
       {:error, error} -> raise to_string(error)
@@ -286,7 +281,7 @@ defmodule Statechart.Build do
          new_child_definition = update_root(child_definition, update_child_root),
          {:ok, new_parent_definition} <-
            insert(parent_definition, new_child_definition, parent_id) do
-      Acc.put_statechart_def(env, new_parent_definition)
+      Acc.put_chart(env, new_parent_definition)
     end
 
     :ok

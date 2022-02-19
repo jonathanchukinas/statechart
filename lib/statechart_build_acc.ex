@@ -24,7 +24,7 @@ defmodule Statechart.Build.Acc do
 
   # REDUCERS
 
-  def put_statechart_def(env, statechart_def) do
+  def put_chart(env, statechart_def) do
     acc = %__MODULE__{get_attribute(env) | statechart_def: statechart_def}
     put_attribute(env, acc)
   end

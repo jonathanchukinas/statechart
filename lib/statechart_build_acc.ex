@@ -29,8 +29,7 @@ defmodule Statechart.Build.Acc do
     put_attribute(env, acc)
   end
 
-  # TODO rename push_ ...?
-  def put_current_id(env, id) do
+  def push_current_id(env, id) do
     acc =
       env
       |> get_attribute

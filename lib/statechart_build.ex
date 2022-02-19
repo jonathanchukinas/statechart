@@ -155,7 +155,7 @@ defmodule Statechart.Build do
          {:ok, new_node_id} <- fetch_id_by_state(new_definition, name) do
       env
       |> Acc.put_chart(new_definition)
-      |> Acc.put_current_id(new_node_id)
+      |> Acc.push_current_id(new_node_id)
 
       :ok
     else
@@ -167,15 +167,14 @@ defmodule Statechart.Build do
   def __defstate_enter__(:insert_transitions_and_defaults, env, _name, opts) do
     chart = Acc.statechart_def(env)
     {:ok, origin_node} = fetch_node_by_metadata(chart, Metadata.from_env(env))
-    Acc.put_current_id(env, Node.id(origin_node))
+    Acc.push_current_id(env, Node.id(origin_node))
 
     with {:ok, target_name} <- Keyword.fetch(opts, :default),
          {:ok, target_id} <- fetch_id_by_state(chart, target_name),
          {:ok, new_origin_node} <- Node.put_new_default(origin_node, target_id),
          {:ok, new_chart} <- replace_node(chart, new_origin_node) do
       env
-      |> Acc.put_current_id(Node.id(origin_node))
-      # TODO rename this to put_chart
+      |> Acc.push_current_id(Node.id(origin_node))
       |> Acc.put_chart(new_chart)
 
       :ok
@@ -191,7 +190,7 @@ defmodule Statechart.Build do
 
   def __defstate_enter__(_build_step, env, _name, _ops) do
     {:ok, node} = fetch_node_by_metadata(Acc.statechart_def(env), Metadata.from_env(env))
-    Acc.put_current_id(env, Node.id(node))
+    Acc.push_current_id(env, Node.id(node))
     :ok
   end
 

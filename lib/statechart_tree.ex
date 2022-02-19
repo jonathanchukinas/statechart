@@ -17,9 +17,26 @@ defmodule Statechart.Tree do
   @type t :: IsTree.t()
 
   @typedoc """
+  All the nodes that have a given node as an ancestor.
+
+  In Modified Preorder Tree lingo,
+  a descendent has an `lft` greater that its ancestor
+  and a `rgt` less that its ancestor.
+  """
+  @type descendent :: Node.t()
+  @type descendents :: [descendent]
+
+  @typedoc """
   This is the line of nodes from root to the node in question.
   """
   @type path :: [Node.t()]
+
+  @typedoc """
+  Union of a node's `t:path/0` and `t:descendents/0`.
+
+  Useful when e.g. looking for deplicate [transitions](`t:Statechart.Transition.t/0`).
+  """
+  @type family_tree :: [Node.t()]
   @starting_node_id 1
 
   #####################################
@@ -97,9 +114,11 @@ defmodule Statechart.Tree do
   @spec contains_id?(t, Node.id()) :: boolean
   def contains_id?(tree, id), do: id in 1..max_node_id(tree)
 
-  # TODO I think I have this named wrong. It should be fetch_descendents_by_id?
-  @spec fetch_ancestors_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
-  def fetch_ancestors_by_id(tree, parent_id) do
+  @doc """
+  Get list of all of a node's [descendents](`t:descendent/0`)
+  """
+  @spec fetch_descendents_by_id(t, Node.id()) :: {:ok, descendents} | {:error, atom}
+  def fetch_descendents_by_id(tree, parent_id) do
     tree
     |> nodes_starting_at_node_id(parent_id)
     |> Enum.to_list()
@@ -114,12 +133,11 @@ defmodule Statechart.Tree do
     end
   end
 
-  @spec fetch_path_and_descendents_by_id(t, Node.id()) :: {:ok, [Node.t()]}
-  def fetch_path_and_descendents_by_id(tree, node_id) do
+  @spec fetch_family_tree_by_id(t, Node.id()) :: {:ok, family_tree}
+  def fetch_family_tree_by_id(tree, node_id) do
     with {:ok, path} <- fetch_path_by_id(tree, node_id),
-         # TODO DRYify this?
-         {:ok, ancestors} <- fetch_ancestors_by_id(tree, node_id) do
-      {:ok, path ++ ancestors}
+         {:ok, descendents} <- fetch_descendents_by_id(tree, node_id) do
+      {:ok, path ++ descendents}
     else
       {:error, _reason} = error -> error
     end
@@ -127,7 +145,7 @@ defmodule Statechart.Tree do
 
   @spec fetch_children_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, atom}
   def fetch_children_by_id(tree, parent_id) do
-    case fetch_ancestors_by_id(tree, parent_id) do
+    case fetch_descendents_by_id(tree, parent_id) do
       {:ok, [first_child | _rest] = ancestors} ->
         {_next_lft, children} =
           Enum.reduce(

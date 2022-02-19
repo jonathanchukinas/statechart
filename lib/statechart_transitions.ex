@@ -11,8 +11,26 @@ defmodule Statechart.Transitions do
   alias Statechart.State
   alias Statechart.Transition
 
-  @type path_item :: {:up | :down, Node.t()}
+  # TODO do I need this type?
+  # TODO rename transition_path_step
+  # TODO :exit and :enter instead of up and down
+  @type path_item :: {:exit | :enter, Node.t()}
 
+  # TODO rename current_id/name -> origin_id/name
+  #
+  @typedoc """
+  To travel from one node to another, you have to travel up the origin node's path
+  and then down the target node's path. This type describes that path.
+  You rarely ever go all the way up to the root node. Instead, you travel up to where
+  the two paths meet.
+
+  This is important for handling the exit/enter actions for each node along this path.
+
+  CONSIDER: come up with a better term for it? One that doesn't use the word `path`?
+  """
+  @type transition_path :: [path_item]
+
+  # TODO rename chart_spec?
   @type chart_or_module :: Chart.t() | module
 
   #####################################
@@ -41,31 +59,23 @@ defmodule Statechart.Transitions do
   #####################################
   # HELPERS
 
-  # TODO clarify terms somewhere
-  # Event can mean either the spec given to a chart or
-  # it can mean the actual atom or Event struct incoming that drives a state change
-  # a Transition is a combo of Event and target id
   defp fetch_target_id(chart, current_id, event) do
     with {:ok, transition} <- fetch_transition(chart, current_id, event),
-         # TODO rename this to Transition.target_id/1
          target_id = Transition.target_id(transition) do
       {:ok, target_id}
     end
   end
 
-  # TODO clarify terms:
-  #   target_id is the one given by the event transition
-  #   destination_id is the ultimate destination after branch nodes follow their default path down to a leaf node
   # TODO this should be broken up. Some functionality moves out to fetch_target_id
   @spec fetch_transition_path(Chart.t(), State.t(), Event.t()) ::
-          {:ok, [path_item]} | {:error, atom}
+          {:ok, transition_path} | {:error, atom}
   def fetch_transition_path(chart, state, event) do
-    with {:ok, node_id} <- fetch_id_by_state(chart, state),
-         {:ok, transition} <- fetch_transition(chart, node_id, event),
+    with {:ok, current_id} <- fetch_id_by_state(chart, state),
+         {:ok, transition} <- fetch_transition(chart, current_id, event),
          target_id = Transition.target_id(transition),
-         {:ok, state_path} <- fetch_path_by_id(chart, node_id),
+         {:ok, current_path} <- fetch_path_by_id(chart, current_id),
          {:ok, destination_path} <- fetch_path_by_id(chart, target_id) do
-      {:ok, do_transition_path(state_path, destination_path)}
+      {:ok, do_transition_path(current_path, destination_path)}
     end
   end
 

@@ -134,7 +134,7 @@ defmodule Statechart.Build do
   The way to have multiple nodes sharing the same name is to define statechart
   partials in separate module and then insert those partials into a parent statechart.
   """
-  defmacro defstate(name, do: block) do
+  defmacro defstate(name, _opts \\ [], do: block) do
     quote do
       Build.__defstate_enter__(@__sc_build_step__, __ENV__, unquote(name))
       unquote(block)
@@ -190,9 +190,9 @@ defmodule Statechart.Build do
   @doc """
   Register a transtion from an event and target state.
   """
-  defmacro transition(event, destination_node_name) do
-    quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
-      Build.__transition__(@__sc_build_step__, __ENV__, event, destination_node_name)
+  defmacro transition(event, target_name) do
+    quote bind_quoted: [event: event, target_name: target_name] do
+      Build.__transition__(@__sc_build_step__, __ENV__, event, target_name)
     end
   end
 
@@ -204,7 +204,7 @@ defmodule Statechart.Build do
   end
 
   @spec __transition__(build_step, Macro.Env.t(), Event.t(), Node.name()) :: :ok
-  def __transition__(:insert_transitions, env, event, destination_node_name) do
+  def __transition__(:insert_transitions, env, event, target_name) do
     statechart_def = Acc.statechart_def(env)
     node_id = Acc.current_id(env)
 
@@ -222,8 +222,8 @@ defmodule Statechart.Build do
       raise StatechartBuildError, msg
     end
 
-    with {:ok, destination_id} <- fetch_id_by_state(statechart_def, destination_node_name),
-         transition = Transition.new(event, destination_id, Metadata.from_env(env)),
+    with {:ok, target_id} <- fetch_id_by_state(statechart_def, target_name),
+         transition = Transition.new(event, target_id, Metadata.from_env(env)),
          {:ok, statechart_def} <-
            update_node_by_id(statechart_def, node_id, &Node.put_transition(&1, transition)) do
       Acc.put_statechart_def(env, statechart_def)

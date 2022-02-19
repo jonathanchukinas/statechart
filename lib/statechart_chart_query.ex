@@ -122,7 +122,7 @@ defmodule Statechart.Chart.Query do
   @spec fetch_transition_by_id_and_event(t, Node.id(), Event.t()) ::
           {:ok, Transition.t()} | {:error, atom}
   def fetch_transition_by_id_and_event(chart, id, event) do
-    with {:ok, nodes} <- Tree.fetch_path_and_descendents_by_id(chart, id) do
+    with {:ok, nodes} <- Tree.fetch_family_tree_by_id(chart, id) do
       nodes
       |> Stream.flat_map(&Node.transitions/1)
       |> Enum.find(&(Transition.event(&1) == event))

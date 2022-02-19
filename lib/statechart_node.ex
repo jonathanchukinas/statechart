@@ -1,7 +1,6 @@
 defmodule Statechart.Node do
   use Statechart.Util.GetterStruct
   alias __MODULE__
-  alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.Transition
 
@@ -63,13 +62,6 @@ defmodule Statechart.Node do
   @spec put_transition(t, Transition.t()) :: t
   def put_transition(%__MODULE__{} = node, %Transition{} = transition) do
     Map.update!(node, :transitions, &[transition | &1])
-  end
-
-  # TODO delete?
-  @spec put_transition(t, Event.t(), id, Metadata.t()) :: t
-  def put_transition(%__MODULE__{} = node, event, target_id, metadata) do
-    transition = Transition.new(event, target_id, metadata)
-    put_transition(node, transition)
   end
 
   #####################################

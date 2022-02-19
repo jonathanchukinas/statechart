@@ -52,9 +52,38 @@ defmodule Statechart.TransitionsTest do
   test "an event targetting a branch node must provides a default path to a leaf node"
 
   test "the builder raises on events that target a branch node that doesn't have a default path to a leaf node"
-  # TODO test on_exit and on_enter actions
-  # TODO test for event not in current path
 
+  test "on_exit events fire"
+  test "on_enter events fire"
+
+  describe "Events targeting a branch node" do
+    defmodule DefaultsTest do
+      use Statechart
+
+      defchart do
+        :GOTO_BRANCH_WITH_DEFAULT >>> :branch_with_default
+        :GOTO_BRANCH_NO_DEFAULT >>> :branch_no_default
+
+        defstate :branch_with_default, default: :c do
+          defstate :c
+        end
+
+        defstate :branch_no_default do
+          defstate :e
+        end
+      end
+    end
+
+    test "will cause travel to a default leaf node"
+
+    test "fail: will return an error tuple if the branch node has no default leaf node" do
+      Transitions.transition(DefaultsTest, :c, :GOTO_D)
+    end
+  end
+
+  # TODO is this already tested somewhere else?
+  # TODO what to call such an event? invalid?
+  test "fail: an event not in current path returns an error tuple"
 
   describe "transition/3" do
     defmodule SimpleToggle do

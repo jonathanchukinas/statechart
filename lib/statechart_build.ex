@@ -198,6 +198,7 @@ defmodule Statechart.Build do
   @spec __defstate_exit__(Macro.Env.t()) :: :ok
   def __defstate_exit__(env) do
     _current_id = Acc.pop_id!(env)
+    :ok
   end
 
   #####################################

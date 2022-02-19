@@ -12,12 +12,9 @@ defmodule Statechart.Transitions do
   alias Statechart.Transition
 
   # TODO do I need this type?
-  # TODO rename transition_path_step
   # TODO :exit and :enter instead of up and down
-  @type path_item :: {:exit | :enter, Node.t()}
+  @type path_step :: {:exit | :enter, Node.t()}
 
-  # TODO rename current_id/name -> origin_id/name
-  #
   @typedoc """
   To travel from one node to another, you have to travel up the origin node's path
   and then down the target node's path. This type describes that path.
@@ -28,10 +25,9 @@ defmodule Statechart.Transitions do
 
   CONSIDER: come up with a better term for it? One that doesn't use the word `path`?
   """
-  @type transition_path :: [path_item]
+  @type transition_path :: [path_step]
 
-  # TODO rename chart_spec?
-  @type chart_or_module :: Chart.t() | module
+  @type chart_spec :: Chart.t() | module
 
   #####################################
   # API
@@ -47,10 +43,10 @@ defmodule Statechart.Transitions do
   # TODO why don't these obviously wrong error messages not throw dialyzer warnings?
   @spec transition(Chart.t(), State.t(), Event.t()) ::
           {:ok, State.t()} | {:error, :something | :something_else}
-  def transition(chart_or_module, state, event) do
-    with {:ok, chart} <- fetch_chart(chart_or_module),
-         {:ok, current_id} <- fetch_id_by_state(chart, state),
-         {:ok, target_id} <- fetch_target_id(chart, current_id, event),
+  def transition(chart_spec, state, event) do
+    with {:ok, chart} <- fetch_chart(chart_spec),
+         {:ok, origin_id} <- fetch_id_by_state(chart, state),
+         {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
          {:ok, target_node} <- fetch_node_by_id(chart, target_id) do
       {:ok, Node.name(target_node)}
     end
@@ -59,8 +55,8 @@ defmodule Statechart.Transitions do
   #####################################
   # HELPERS
 
-  defp fetch_target_id(chart, current_id, event) do
-    with {:ok, transition} <- fetch_transition(chart, current_id, event),
+  defp fetch_target_id(chart, origin_id, event) do
+    with {:ok, transition} <- fetch_transition(chart, origin_id, event),
          target_id = Transition.target_id(transition) do
       {:ok, target_id}
     end
@@ -70,10 +66,10 @@ defmodule Statechart.Transitions do
   @spec fetch_transition_path(Chart.t(), State.t(), Event.t()) ::
           {:ok, transition_path} | {:error, atom}
   def fetch_transition_path(chart, state, event) do
-    with {:ok, current_id} <- fetch_id_by_state(chart, state),
-         {:ok, transition} <- fetch_transition(chart, current_id, event),
+    with {:ok, origin_id} <- fetch_id_by_state(chart, state),
+         {:ok, transition} <- fetch_transition(chart, origin_id, event),
          target_id = Transition.target_id(transition),
-         {:ok, current_path} <- fetch_path_by_id(chart, current_id),
+         {:ok, current_path} <- fetch_path_by_id(chart, origin_id),
          {:ok, destination_path} <- fetch_path_by_id(chart, target_id) do
       {:ok, do_transition_path(current_path, destination_path)}
     end

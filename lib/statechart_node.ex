@@ -65,7 +65,7 @@ defmodule Statechart.Node do
     Map.update!(node, :transitions, &[transition | &1])
   end
 
-  @spec put_new_default(t, id) :: t
+  @spec put_new_default(t, id) :: {:ok, t} | {:error, :default_already_present}
   def put_new_default(node, id) do
     case default(node) do
       nil -> {:ok, %__MODULE__{node | default: id}}

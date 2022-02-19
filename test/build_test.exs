@@ -10,18 +10,6 @@ defmodule Statechart.BuildTest do
   use Statechart.Chart
 
   describe "defchart/2" do
-    # defmodule Sample do
-    #   use Statechart
-
-    #   defchart do
-    #     defstate :on, do: :flip >>> :off
-
-    #     defstate :off do
-    #       :flip >>> :on
-    #     end
-    #   end
-    # end
-
     test "raises if defchart was already called in this module" do
       assert_raise StatechartBuildError, ~r/Only one defchart/, fn ->
         defmodule InvalidDoubleDefchart do
@@ -32,8 +20,7 @@ defmodule Statechart.BuildTest do
       end
     end
 
-    # TODO rename this test
-    test "injects a definition/0 function into caller" do
+    test "injects a __chart__/0 function into caller" do
       defmodule SingleDefchart do
         use Statechart
         defchart do: nil

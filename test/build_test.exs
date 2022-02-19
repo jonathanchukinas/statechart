@@ -129,7 +129,7 @@ defmodule Statechart.BuildTest do
 
   # This should test for the line number
   # Should give suggestions for matching names ("Did you mean ...?")
-  describe ">>>/2" do
+  describe "transition/2 & >>>/2" do
     # This should test for the line number
     test "raises a StatechartBuildError on invalid event names"
 
@@ -140,7 +140,7 @@ defmodule Statechart.BuildTest do
           use Statechart
 
           defchart do
-            :AMBIGUOUS_EVENT >>> :b
+            transition(:AMBIGUOUS_EVENT, :b)
 
             defstate :a do
               :AMBIGUOUS_EVENT >>> :c

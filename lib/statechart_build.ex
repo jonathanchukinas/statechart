@@ -16,9 +16,6 @@ defmodule Statechart.Build do
   a `StatechartBuildError` exception will raise.
   """
 
-  # TODO implement a `transition/2` macro. `>>>/2` will be a shorthand for it.
-  # TODO implement `use Statechart, :chart`
-
   use TypedStruct
   use Statechart.Chart
   alias __MODULE__
@@ -194,8 +191,8 @@ defmodule Statechart.Build do
   @doc """
   Register a transtion from an event and target state.
   """
-  @spec Event.registration() >>> State.t() :: :ok
-  defmacro event >>> destination_node_name do
+  @spec transition(Event.registration(), State.t()) :: :ok
+  defmacro transition(event, destination_node_name) do
     unless :ok == Event.validate(event) do
       raise CompileError, description: "#{event} is not a valid event"
     end
@@ -203,6 +200,14 @@ defmodule Statechart.Build do
     quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
       Build.__transition__(@__sc_build_step__, __ENV__, event, destination_node_name)
     end
+  end
+
+  @doc """
+  Alias for `transition/2`
+  """
+  @spec Event.registration() >>> State.t() :: :ok
+  defmacro event >>> target_name do
+    quote do: transition(unquote(event), unquote(target_name))
   end
 
   @spec __transition__(build_step, Macro.Env.t(), Event.t(), Node.name()) :: :ok
@@ -240,7 +245,7 @@ defmodule Statechart.Build do
   end
 
   #####################################
-  # TRANSITION
+  # SUBCHART
 
   @doc """
   Inject a chart defined in another module.

@@ -90,21 +90,9 @@ defmodule Statechart.Chart.Query do
   @spec fetch_transition(t, Node.id(), Event.t()) ::
           {:ok, Transition.t()} | {:error, :event_not_found}
   def fetch_transition(chart, node_id, event) do
-    case get_transition(chart, node_id, event) do
-      nil -> {:error, :event_not_found}
-      transition -> {:ok, transition}
-    end
-  end
-
-  # TODO where used?
-  @spec get_transition(t, Node.id(), Event.t()) :: Transition.t() | nil
-  def get_transition(chart, node_id, event) do
-    with {:ok, nodes} <- Tree.fetch_path_by_id(chart, node_id) do
-      nodes
-      |> Stream.flat_map(&Node.transitions/1)
-      |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))
-    else
-      _ -> nil
+    with {:ok, nodes} <- Tree.fetch_path_by_id(chart, node_id),
+         {:ok, transition} <- fetch_transition_from_nodes(nodes, event) do
+      {:ok, transition}
     end
   end
 
@@ -157,5 +145,20 @@ defmodule Statechart.Chart.Query do
       {:ok, node_module} = MetadataAccess.fetch_module(node)
       tree_module == node_module
     end)
+  end
+
+  #####################################
+  # HELPERS
+
+  # TODO add spec
+  defp fetch_transition_from_nodes(nodes, event) do
+    nodes
+    |> Stream.flat_map(&Node.transitions/1)
+    |> Enum.reverse()
+    |> Enum.find(&(&1 |> Transition.event() |> Event.match?(event)))
+    |> case do
+      nil -> {:error, :event_not_found}
+      transition -> {:ok, transition}
+    end
   end
 end

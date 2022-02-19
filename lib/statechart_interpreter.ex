@@ -11,8 +11,7 @@ defmodule Statechart.Interpreter do
   # TYPES
 
   typedstruct enforce: true do
-    # TODO rename chart_module
-    field :chart, module
+    field :chart_module, module
     field :context, any, default: nil
   end
 
@@ -26,7 +25,7 @@ defmodule Statechart.Interpreter do
   def new(definition_module, context \\ nil) when is_atom(definition_module) do
     with true <- {:chart, 0} in definition_module.__info__(:functions),
          %Chart{} <- definition_from_module(definition_module) do
-      %__MODULE__{chart: definition_module, context: context}
+      %__MODULE__{chart_module: definition_module, context: context}
     else
       _ ->
         # TODO again, I don't like the direct ref to __chart__
@@ -39,7 +38,7 @@ defmodule Statechart.Interpreter do
   #####################################
   # CONVERTERS
 
-  def chart(%__MODULE__{chart: module}) do
+  def chart(%__MODULE__{chart_module: module}) do
     definition_from_module(module)
   end
 

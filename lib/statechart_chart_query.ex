@@ -76,8 +76,8 @@ defmodule Statechart.Chart.Query do
     end
   end
 
-  @spec fetch_id_by_state(t, State.t()) :: Node.id()
-  def fetch_id_by_state(chart, state) do
+  @spec fetch_id_by_state!(t, State.t()) :: Node.id()
+  def fetch_id_by_state!(chart, state) do
     case fetch_id_by_state(chart, state) do
       {:ok, node_id} -> node_id
       {:error, _reason} -> raise "#{state} not found!"
@@ -150,7 +150,8 @@ defmodule Statechart.Chart.Query do
   #####################################
   # HELPERS
 
-  # TODO add spec
+  @spec fetch_transition_from_nodes(Tree.path(), Event.IsEvent.t()) ::
+          {:ok, Transition.t()} | {:error, :event_not_found}
   defp fetch_transition_from_nodes(nodes, event) do
     nodes
     |> Stream.flat_map(&Node.transitions/1)

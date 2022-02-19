@@ -23,7 +23,6 @@ defmodule Statechart.Build do
   alias Statechart.Event
   alias Statechart.Metadata
   alias Statechart.MetadataAccess
-  alias Statechart.State
   alias Statechart.Transition
 
   @build_steps ~w/
@@ -191,12 +190,7 @@ defmodule Statechart.Build do
   @doc """
   Register a transtion from an event and target state.
   """
-  @spec transition(Event.registration(), State.t()) :: :ok
   defmacro transition(event, destination_node_name) do
-    unless :ok == Event.validate(event) do
-      raise CompileError, description: "#{event} is not a valid event"
-    end
-
     quote bind_quoted: [event: event, destination_node_name: destination_node_name] do
       Build.__transition__(@__sc_build_step__, __ENV__, event, destination_node_name)
     end
@@ -205,7 +199,6 @@ defmodule Statechart.Build do
   @doc """
   Alias for `transition/2`
   """
-  @spec Event.registration() >>> State.t() :: :ok
   defmacro event >>> target_name do
     quote do: transition(unquote(event), unquote(target_name))
   end

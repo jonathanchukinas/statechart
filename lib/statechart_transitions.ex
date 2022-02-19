@@ -26,7 +26,9 @@ defmodule Statechart.Transitions do
   #   {state, context}
   # end
 
-  @spec transition(Chart.t(), State.t(), Event.t()) :: State.t()
+  # TODO why don't these obviously wrong error messages not throw dialyzer warnings?
+  @spec transition(Chart.t(), State.t(), Event.t()) ::
+          {:ok, State.t()} | {:error, :something | :something_else}
   def transition(chart_or_module, state, event) do
     with {:ok, chart} <- fetch_chart(chart_or_module),
          {:ok, current_id} <- fetch_id_by_state(chart, state),

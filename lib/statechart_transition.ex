@@ -23,7 +23,7 @@ defmodule Statechart.Transition do
 
   defimpl Inspect do
     def inspect(%Transition{event: event, target_id: target_id}, _opts) do
-      "#Transition<#{event} >>> #{target_id}>"
+      "#Transition<#{event}-#{target_id}>"
     end
   end
 

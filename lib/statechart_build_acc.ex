@@ -8,7 +8,7 @@ defmodule Statechart.Build.Acc do
 
   typedstruct enforce: true do
     field :statechart_def, Chart.t()
-    field :current_node_id, Node.id()
+    field :path_ids, [Node.id()]
   end
 
   # CONSTRUCTORS
@@ -16,7 +16,7 @@ defmodule Statechart.Build.Acc do
   def put_new(env, statechart_def) do
     acc = %__MODULE__{
       statechart_def: statechart_def,
-      current_node_id: Tree.max_node_id(statechart_def)
+      path_ids: [Tree.max_node_id(statechart_def)]
     }
 
     put_attribute(env, acc)
@@ -29,8 +29,13 @@ defmodule Statechart.Build.Acc do
     put_attribute(env, acc)
   end
 
+  # TODO rename push_ ...?
   def put_current_id(env, id) do
-    acc = %__MODULE__{get_attribute(env) | current_node_id: id}
+    acc =
+      env
+      |> get_attribute
+      |> Map.update!(:path_ids, &[id | &1])
+
     put_attribute(env, acc)
   end
 
@@ -43,11 +48,31 @@ defmodule Statechart.Build.Acc do
     |> Map.fetch!(:statechart_def)
   end
 
+  # TODO delete?
+  @spec pop_id!(Macro.Env.t()) :: Node.id()
+  def pop_id!(%Macro.Env{module: module} = env) do
+    %__MODULE__{path_ids: ids} = acc = Module.get_attribute(module, @attr)
+
+    case ids do
+      [] ->
+        raise "whoopsie! expected there to still be at least one id in path_ids"
+
+      [current_id | tail] ->
+        new_acc = %__MODULE__{acc | path_ids: tail}
+        put_attribute(env, new_acc)
+        current_id
+    end
+  end
+
+  # TODO delete?
   @spec current_id(Macro.Env.t()) :: Node.id()
   def current_id(%Macro.Env{module: module}) do
-    module
-    |> Module.get_attribute(@attr)
-    |> Map.fetch!(:current_node_id)
+    [current_id | _tail] =
+      module
+      |> Module.get_attribute(@attr)
+      |> Map.fetch!(:path_ids)
+
+    current_id
   end
 
   defp put_attribute(%Macro.Env{module: module} = env, acc) do

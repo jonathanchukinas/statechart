@@ -25,13 +25,14 @@ defmodule Statechart.Build do
   alias Statechart.MetadataAccess
   alias Statechart.Transition
 
+  # CONSIDER do transitions, default, and subcharts.. can they all go at the same time?
   @build_steps ~w/
     insert_nodes
-    insert_transitions
+    insert_transitions_and_defaults
     insert_subcharts
     /a
 
-  @type build_step :: :insert_nodes | :insert_transitions | :insert_subcharts
+  @type build_step :: :insert_nodes | :insert_transitions_and_defaults | :insert_subcharts
 
   #####################################
   # DEFCHART
@@ -134,17 +135,17 @@ defmodule Statechart.Build do
   The way to have multiple nodes sharing the same name is to define statechart
   partials in separate module and then insert those partials into a parent statechart.
   """
-  defmacro defstate(name, _opts \\ [], do: block) do
+  defmacro defstate(name, opts \\ [], do: block) do
     quote do
-      Build.__defstate_enter__(@__sc_build_step__, __ENV__, unquote(name))
+      Build.__defstate_enter__(@__sc_build_step__, __ENV__, unquote(name), unquote(opts))
       unquote(block)
       Build.__defstate_exit__(__ENV__)
     end
   end
 
   @doc false
-  @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name()) :: :ok
-  def __defstate_enter__(:insert_nodes = _build_step, env, name) do
+  @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name(), Keyword.t()) :: :ok
+  def __defstate_enter__(:insert_nodes = _build_step, env, name, _opts) do
     old_definition = Acc.statechart_def(env)
     parent_id = Acc.current_id(env)
 
@@ -163,7 +164,37 @@ defmodule Statechart.Build do
     end
   end
 
-  def __defstate_enter__(_build_step, env, _name) do
+  # TODO test that a state cannot be defined twice
+  # TODO test that a bad name raises
+  # TODO test that target must be a descendent
+  # TODO test that the builder checks for transitions that don't resolve in leaf nodes
+  # TODO check and test that a default can only be given to a branch node
+  def __defstate_enter__(:insert_transitions_and_defaults, env, _name, opts) do
+    chart = Acc.statechart_def(env)
+    {:ok, origin_node} = fetch_node_by_metadata(chart, Metadata.from_env(env))
+    Acc.put_current_id(env, Node.id(origin_node))
+
+    with {:ok, target_name} <- Keyword.fetch(opts, :default),
+         {:ok, target_id} <- fetch_id_by_state(chart, target_name),
+         {:ok, new_origin_node} <- Node.put_new_default(origin_node, target_id),
+         {:ok, new_chart} <- replace_node(chart, new_origin_node) do
+      env
+      |> Acc.put_current_id(Node.id(origin_node))
+      # TODO rename this to put_chart
+      |> Acc.put_statechart_def(new_chart)
+
+      :ok
+    else
+      :error ->
+        # no :default in keyword
+        :ok
+
+      {:error, reason} ->
+        raise reason
+    end
+  end
+
+  def __defstate_enter__(_build_step, env, _name, _ops) do
     {:ok, node} = fetch_node_by_metadata(Acc.statechart_def(env), Metadata.from_env(env))
     Acc.put_current_id(env, Node.id(node))
     :ok
@@ -172,16 +203,7 @@ defmodule Statechart.Build do
   @doc false
   @spec __defstate_exit__(Macro.Env.t()) :: :ok
   def __defstate_exit__(env) do
-    statechart_def = Acc.statechart_def(env)
-
-    with {:ok, current_node} <- fetch_node_by_metadata(statechart_def, Metadata.from_env(env)),
-         {:ok, parent_node} <- fetch_parent_by_id(statechart_def, Node.id(current_node)),
-         parent_id <- Node.id(parent_node) do
-      Acc.put_current_id(env, parent_id)
-      :ok
-    else
-      {:error, reason} -> raise CompileError, description: to_string(reason)
-    end
+    _current_id = Acc.pop_id!(env)
   end
 
   #####################################
@@ -204,7 +226,7 @@ defmodule Statechart.Build do
   end
 
   @spec __transition__(build_step, Macro.Env.t(), Event.t(), Node.name()) :: :ok
-  def __transition__(:insert_transitions, env, event, target_name) do
+  def __transition__(:insert_transitions_and_defaults, env, event, target_name) do
     statechart_def = Acc.statechart_def(env)
     node_id = Acc.current_id(env)
 
@@ -222,7 +244,8 @@ defmodule Statechart.Build do
       raise StatechartBuildError, msg
     end
 
-    with {:ok, target_id} <- fetch_id_by_state(statechart_def, target_name),
+    with {:ok, target_id} <-
+           fetch_id_by_state(statechart_def, target_name),
          transition = Transition.new(event, target_id, Metadata.from_env(env)),
          {:ok, statechart_def} <-
            update_node_by_id(statechart_def, node_id, &Node.put_transition(&1, transition)) do

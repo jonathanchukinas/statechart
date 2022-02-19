@@ -14,6 +14,7 @@ defmodule Statechart.Node do
     field :rgt, pos_integer, default: 1
     field :metadata, Metadata.t(), enforce: false
     field :transitions, [Transition.t()], default: []
+    field :default, id, enforce: nil
   end
 
   @type not_inserted ::
@@ -62,6 +63,14 @@ defmodule Statechart.Node do
   @spec put_transition(t, Transition.t()) :: t
   def put_transition(%__MODULE__{} = node, %Transition{} = transition) do
     Map.update!(node, :transitions, &[transition | &1])
+  end
+
+  @spec put_new_default(t, id) :: t
+  def put_new_default(node, id) do
+    case default(node) do
+      nil -> {:ok, %__MODULE__{node | default: id}}
+      integer when is_integer(integer) -> {:error, :default_already_present}
+    end
   end
 
   #####################################

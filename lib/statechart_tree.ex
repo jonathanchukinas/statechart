@@ -108,6 +108,13 @@ defmodule Statechart.Tree do
     end
   end
 
+  @spec replace_node(t, Node.t()) :: t
+  def replace_node(tree, node) do
+    update_fn = fn _node -> node end
+    id = Node.id(node)
+    update_node_by_id(tree, id, update_fn)
+  end
+
   #####################################
   # CONVERTERS
 

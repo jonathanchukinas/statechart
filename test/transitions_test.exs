@@ -55,6 +55,7 @@ defmodule Statechart.TransitionsTest do
 
   test "on_exit events fire"
   test "on_enter events fire"
+  test "root can have a default"
 
   describe "Events targeting a branch node" do
     defmodule DefaultsTest do

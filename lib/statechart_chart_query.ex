@@ -142,6 +142,15 @@ defmodule Statechart.Chart.Query do
     end
   end
 
+  def validate_target_id_is_descendent(chart, origin_id, target_id) do
+    with {:ok, descendents} <- Tree.fetch_descendents_by_id(chart, origin_id),
+         true <- target_id in Stream.map(descendents, &Node.id/1) do
+      :ok
+    else
+      _ -> {:error, :target_not_descendent}
+    end
+  end
+
   #####################################
   # CONVERTERS (private)
 

@@ -137,6 +137,7 @@ defmodule Statechart.Build do
   """
   defmacro defstate(name, opts \\ [], do: block) do
     quote do
+      raise_if_out_of_scope("defstate/1 and defstate/2 must be called inside a defchart/2 block")
       Build.__defstate_enter__(@__sc_build_step__, __ENV__, unquote(name), unquote(opts))
       unquote(block)
       Build.__defstate_exit__(__ENV__)
@@ -170,7 +171,9 @@ defmodule Statechart.Build do
     Acc.push_current_id(env, Node.id(origin_node))
 
     with {:ok, target_name} <- Keyword.fetch(opts, :default),
+         :ok <- Node.validate_branch_node(origin_node),
          {:ok, target_id} <- fetch_id_by_state(chart, target_name),
+         :ok <- validate_target_id_is_descendent(chart, Node.id(origin_node), target_id),
          {:ok, new_origin_node} <- Node.put_new_default(origin_node, target_id),
          {:ok, new_chart} <- replace_node(chart, new_origin_node) do
       env
@@ -182,6 +185,15 @@ defmodule Statechart.Build do
       :error ->
         # no :default in keyword
         :ok
+
+      {:error, :is_leaf_node} ->
+        # tried assigning a default to a leaf node
+        msg = "cannot assign a default to a leaf node"
+        raise StatechartBuildError, msg
+
+      {:error, :target_not_descendent} ->
+        msg = "default node must be a descendent"
+        raise StatechartBuildError, msg
 
       {:error, reason} ->
         raise reason
@@ -325,6 +337,14 @@ defmodule Statechart.Build do
       _ ->
         raise StatechartBuildError,
               "the module #{module} on line #{line_number} does not define a Statechart.Chart.t struct. See `use Statechart`"
+    end
+  end
+
+  defmacro raise_if_out_of_scope(message) do
+    quote do
+      unless Module.has_attribute?(__MODULE__, :__sc_build_step__) do
+        raise StatechartBuildError, unquote(message)
+      end
     end
   end
 end

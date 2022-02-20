@@ -15,9 +15,59 @@ defmodule Statechart.BuildTest do
   end
 
   describe "defstate/1 or /2" do
-    test "raises if called outside of defchart block"
-    test "raises if default target is not a descendent"
-    test "raises if default opt if given to a leaf node"
+    test "raises if called before defchart block" do
+      assert_raise StatechartBuildError, ~r/must be called inside/, fn ->
+        defmodule DefstateOutOfScopeBefore do
+          import Statechart.Build
+          defstate :naughty
+        end
+      end
+    end
+
+    test "raises if called after a defchart block" do
+      assert_raise StatechartBuildError, ~r/must be called inside/, fn ->
+        defmodule DefstateOutOfScopeAfter do
+          use Statechart
+
+          defchart do
+          end
+
+          import Statechart.Build
+          defstate :naughty
+        end
+      end
+    end
+
+    test "raises if default opt if given to a leaf node" do
+      assert_raise StatechartBuildError, ~r/cannot assign a default to a leaf/, fn ->
+        defmodule DefaultPassedToLeafNode do
+          use Statechart
+
+          defchart do
+            defstate :a, default: :b do
+            end
+
+            defstate :b
+          end
+        end
+      end
+    end
+
+    test "raises if default target is not a descendent" do
+      assert_raise StatechartBuildError, ~r/must be a descendent/, fn ->
+        defmodule DefaultIsNotDescendent do
+          use Statechart
+
+          defchart do
+            defstate :a, default: :b do
+              defstate :c
+            end
+
+            defstate :b
+          end
+        end
+      end
+    end
 
     test "do-block is optional" do
       defmodule DefstateWithNoDoBlock do

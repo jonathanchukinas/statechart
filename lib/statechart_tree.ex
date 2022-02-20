@@ -1,10 +1,6 @@
 defmodule Statechart.Tree do
   @moduledoc """
-  Some terminology:
-
-  - `t:path/0`: a list of nodes tracing a path from root to the node in question
   - ancestors: the `t:path/0` list minus the last node
-  - descendents: all nodes that have the current node as one of their ancestors
   - parent: the parent of the node in question
   - children: ancestors, but only one level deep
   """
@@ -268,7 +264,6 @@ defmodule Statechart.Tree do
   #####################################
   # CONVERTERS (private)
 
-  # TODO what does this do?
   @spec nodes_up_to_and_incl_node_id(t, Node.id()) :: Enumerable.t()
   defp nodes_up_to_and_incl_node_id(tree, id) do
     tree

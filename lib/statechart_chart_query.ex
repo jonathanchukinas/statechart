@@ -127,6 +127,21 @@ defmodule Statechart.Chart.Query do
     end
   end
 
+  @doc """
+  Events can target branch nodes, but these nodes must resolve to a leaf node
+  """
+  @spec fetch_default_leaf_node(Chart.t(), Node.t()) :: {:ok, Node.t()} | {:error, atom}
+  def fetch_default_leaf_node(%Chart{} = chart, %Node{} = node) do
+    with :ok <- Node.validate_branch_node(node),
+         {:ok, destination_id} <- Node.fetch_default_id(node),
+         {:ok, destination_node} <- Tree.fetch_node_by_id(chart, destination_id) do
+      fetch_default_leaf_node(chart, destination_node)
+    else
+      {:error, :is_leaf_node} -> {:ok, node}
+      _ -> {:error, :does_not_resolve_to_leaf}
+    end
+  end
+
   #####################################
   # CONVERTERS (private)
 

@@ -79,6 +79,20 @@ defmodule Statechart.Node do
   @spec lft_rgt(t) :: {integer, integer}
   def lft_rgt(%__MODULE__{lft: lft, rgt: rgt}), do: {lft, rgt}
 
+  def validate_branch_node(%__MODULE__{lft: lft, rgt: rgt}) do
+    case rgt - lft do
+      1 -> {:error, :is_leaf_node}
+      _ -> :ok
+    end
+  end
+
+  def fetch_default_id(%__MODULE__{default: default}) do
+    case default do
+      nil -> {:error, :no_default}
+      id when is_integer(id) -> {:ok, id}
+    end
+  end
+
   #####################################
   # IMPLEMENTATIONS
 

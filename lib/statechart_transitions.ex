@@ -41,8 +41,9 @@ defmodule Statechart.Transitions do
     with {:ok, chart} <- Chart.fetch(chart_spec),
          {:ok, origin_id} <- fetch_id_by_state(chart, state),
          {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
-         {:ok, target_node} <- fetch_node_by_id(chart, target_id) do
-      {:ok, Node.name(target_node)}
+         {:ok, target_node} <- fetch_node_by_id(chart, target_id),
+         {:ok, destination_node} <- fetch_default_leaf_node(chart, target_node) do
+      {:ok, Node.name(destination_node)}
     end
   end
 
@@ -56,6 +57,7 @@ defmodule Statechart.Transitions do
     end
   end
 
+  @doc false
   @spec fetch_transition_path(Chart.t(), State.t(), Event.t()) ::
           {:ok, transition_path} | {:error, atom}
   def fetch_transition_path(chart, state, event) do

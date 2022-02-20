@@ -56,31 +56,6 @@ defmodule Statechart.TransitionsTest do
   test "on_enter events fire"
   test "root can have a default"
 
-  describe "Events targeting a branch node" do
-    defmodule DefaultsTest do
-      use Statechart
-
-      defchart do
-        :GOTO_BRANCH_WITH_DEFAULT >>> :branch_with_default
-        :GOTO_BRANCH_NO_DEFAULT >>> :branch_no_default
-
-        defstate :branch_with_default, default: :c do
-          defstate :c
-        end
-
-        defstate :branch_no_default do
-          defstate :e
-        end
-      end
-    end
-
-    test "will cause travel to a default leaf node"
-
-    test "fail: will return an error tuple if the branch node has no default leaf node" do
-      Transitions.transition(DefaultsTest, :c, :GOTO_D)
-    end
-  end
-
   # TODO is this already tested somewhere else?
   # TODO what to call such an event? invalid?
   test "fail: an event not in current path returns an error tuple"
@@ -124,6 +99,40 @@ defmodule Statechart.TransitionsTest do
       assert {:ok, :on} = Transitions.transition(SimpleToggle, :on, :GLOBAL_TURN_ON)
       assert {:ok, :on} = Transitions.transition(SimpleToggle, :off, :GLOBAL_TURN_ON)
       assert {:ok, :off} = Transitions.transition(SimpleToggle, :off, :GLOBAL_TURN_OFF)
+    end
+  end
+
+  describe "defaults" do
+    defmodule DefaultsTest do
+      use Statechart
+
+      defchart do
+        :GOTO_BRANCH_WITH_DEFAULT >>> :branch_with_default
+        :GOTO_BRANCH_NO_DEFAULT >>> :branch_no_default
+
+        # TODO do i already test for raising when builder tries to create a transition with no resolution?
+        :GOTO_BRANCH_NO_DEFAULT_BUT_NO_RESOLUTION >>> :branch_with_default_but_no_resolution
+
+        defstate :branch_with_default_but_no_resolution, default: :branch_no_default do
+          defstate :branch_no_default do
+            defstate :a
+          end
+        end
+
+        defstate :branch_with_default, default: :b do
+          defstate :b
+        end
+      end
+    end
+
+    test "will cause travel to a default leaf node" do
+      assert {:ok, :b} = Transitions.transition(DefaultsTest, :a, :GOTO_BRANCH_WITH_DEFAULT)
+    end
+
+    test "return error tuple when transitioning to a branch node that has a default that doesn't resolve to a leaf node"
+
+    test "fail: will return an error tuple if the branch node has no default leaf node" do
+      assert {:error, _reason} = Transitions.transition(DefaultsTest, :c, :GOTO_BRANCH_NO_DEFAULT)
     end
   end
 end

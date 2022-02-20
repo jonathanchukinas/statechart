@@ -138,7 +138,7 @@ defmodule Statechart.Chart.Query do
       fetch_default_leaf_node(chart, destination_node)
     else
       {:error, :is_leaf_node} -> {:ok, node}
-      _ -> {:error, :does_not_resolve_to_leaf}
+      _ -> {:error, :no_default_leaf}
     end
   end
 

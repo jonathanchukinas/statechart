@@ -129,10 +129,14 @@ defmodule Statechart.TransitionsTest do
       assert {:ok, :b} = Transitions.transition(DefaultsTest, :a, :GOTO_BRANCH_WITH_DEFAULT)
     end
 
-    test "return error tuple when transitioning to a branch node that has a default that doesn't resolve to a leaf node"
+    test "return error tuple when transitioning to a branch node that has a default that doesn't resolve to a leaf node" do
+      assert {:error, :no_default_leaf} =
+               Transitions.transition(DefaultsTest, :b, :GOTO_BRANCH_NO_DEFAULT_BUT_NO_RESOLUTION)
+    end
 
     test "fail: will return an error tuple if the branch node has no default leaf node" do
-      assert {:error, _reason} = Transitions.transition(DefaultsTest, :c, :GOTO_BRANCH_NO_DEFAULT)
+      assert {:error, :no_default_leaf} =
+               Transitions.transition(DefaultsTest, :b, :GOTO_BRANCH_NO_DEFAULT)
     end
   end
 end

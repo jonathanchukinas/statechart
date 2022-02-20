@@ -47,7 +47,7 @@ defmodule Statechart.BuildTest do
         end
       end
 
-      {:ok, chart} = Chart.fetch_from_module(Sample)
+      {:ok, chart} = Chart.fetch(Sample)
       {:ok, 5 = d_node_id} = fetch_id_by_state(chart, :d)
       {:ok, d_path} = fetch_path_by_id(chart, d_node_id)
       assert length(d_path) == 5
@@ -98,7 +98,7 @@ defmodule Statechart.BuildTest do
         end
       end
 
-      {:ok, chart} = Chart.fetch_from_module(MainChart)
+      {:ok, chart} = Chart.fetch(MainChart)
       assert length(fetch_nodes!(chart)) == 5
       assert {:ok, 3} = fetch_id_by_state(chart, :flazzl)
     end

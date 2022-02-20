@@ -26,8 +26,6 @@ defmodule Statechart.Transitions do
   """
   @type transition_path :: [path_step]
 
-  @type chart_spec :: Chart.t() | module
-
   #####################################
   # API
 
@@ -40,10 +38,10 @@ defmodule Statechart.Transitions do
   # end
 
   # TODO why don't these obviously wrong error messages not throw dialyzer warnings?
-  @spec transition(Chart.t(), State.t(), Event.t()) ::
+  @spec transition(Chart.spec(), State.t(), Event.t()) ::
           {:ok, State.t()} | {:error, :something | :something_else}
   def transition(chart_spec, state, event) do
-    with {:ok, chart} <- Chart.fetch_from_spec(chart_spec),
+    with {:ok, chart} <- Chart.fetch(chart_spec),
          {:ok, origin_id} <- fetch_id_by_state(chart, state),
          {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
          {:ok, target_node} <- fetch_node_by_id(chart, target_id) do
@@ -81,5 +79,4 @@ defmodule Statechart.Transitions do
     destination_path_items = Enum.map(destination_tail, &{:enter, &1})
     Enum.reduce(state_path_items, destination_path_items, &[&1 | &2])
   end
-
 end

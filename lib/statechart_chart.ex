@@ -11,6 +11,8 @@ defmodule Statechart.Chart do
 
   @starting_node_id Tree.starting_node_id()
 
+  @type spec :: t() | module
+
   getter_struct do
     field :nodes, [Node.t(), ...], default: [Node.root(@starting_node_id)]
   end
@@ -29,8 +31,10 @@ defmodule Statechart.Chart do
     }
   end
 
-  @spec fetch_from_module(module) :: {:ok, t} | {:error, :chart_not_found}
-  def fetch_from_module(module) do
+  @spec fetch(spec) :: {:ok, t} | {:error, :chart_not_found}
+  def fetch(%__MODULE__{} = chart), do: {:ok, chart}
+
+  def fetch(module) when is_atom(module) do
     with true <- {:__chart__, 0} in module.__info__(:functions),
          %__MODULE__{} = chart <- module.__chart__() do
       {:ok, chart}
@@ -39,10 +43,7 @@ defmodule Statechart.Chart do
     end
   end
 
-  def fetch_from_spec(%__MODULE__{} = chart), do: {:ok, chart}
-  def fetch_from_spec(module) when is_atom(module), do: fetch_from_module(module)
-  # TODO rename this reason
-  def fetch_from_spec(_), do: {:error, :chart_not_found}
+  def fetch(_), do: {:error, :chart_not_found}
 
   #####################################
   # API

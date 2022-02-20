@@ -318,7 +318,7 @@ defmodule Statechart.Build do
 
   # CONSIDER making this specific to subchart
   defp fetch_definition!(module, line_number) do
-    case Chart.fetch_from_module(module) do
+    case Chart.fetch(module) do
       {:ok, chart} ->
         chart
 

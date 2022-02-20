@@ -29,7 +29,7 @@ defmodule Statechart.TransitionsTest do
 
   describe "fetch_transition_path/3" do
     test "returns a list of exit/enter node tuples" do
-      {:ok, chart} = Chart.fetch_from_module(Sample)
+      {:ok, chart} = Chart.fetch(Sample)
       {:ok, transition_path} = Transitions.fetch_transition_path(chart, :d, :GOTO_G)
 
       transition_path_atoms =

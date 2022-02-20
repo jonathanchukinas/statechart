@@ -8,6 +8,6 @@ defmodule Statechart.ChartTest do
       defchart do: nil
     end
 
-    assert {:ok, %Chart{}} = Chart.fetch_from_module(SingleDefchart)
+    assert {:ok, %Chart{}} = Chart.fetch(SingleDefchart)
   end
 end

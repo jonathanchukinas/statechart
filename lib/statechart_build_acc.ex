@@ -47,7 +47,6 @@ defmodule Statechart.Build.Acc do
     |> Map.fetch!(:statechart_def)
   end
 
-  # TODO delete?
   @spec pop_id!(Macro.Env.t()) :: Node.id()
   def pop_id!(%Macro.Env{module: module} = env) do
     %__MODULE__{path_ids: ids} = acc = Module.get_attribute(module, @attr)
@@ -63,7 +62,6 @@ defmodule Statechart.Build.Acc do
     end
   end
 
-  # TODO delete?
   @spec current_id(Macro.Env.t()) :: Node.id()
   def current_id(%Macro.Env{module: module}) do
     [current_id | _tail] =

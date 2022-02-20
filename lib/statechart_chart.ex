@@ -29,15 +29,20 @@ defmodule Statechart.Chart do
     }
   end
 
-  @spec fetch_from_module(module) :: {:ok, t} | {:error, :definition_not_found}
+  @spec fetch_from_module(module) :: {:ok, t} | {:error, :chart_not_found}
   def fetch_from_module(module) do
     with true <- {:__chart__, 0} in module.__info__(:functions),
          %__MODULE__{} = chart <- module.__chart__() do
       {:ok, chart}
     else
-      _ -> {:error, :definition_not_found}
+      _ -> {:error, :chart_not_found}
     end
   end
+
+  def fetch_from_spec(%__MODULE__{} = chart), do: {:ok, chart}
+  def fetch_from_spec(module) when is_atom(module), do: fetch_from_module(module)
+  # TODO rename this reason
+  def fetch_from_spec(_), do: {:error, :chart_not_found}
 
   #####################################
   # API

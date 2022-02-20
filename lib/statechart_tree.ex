@@ -7,8 +7,9 @@ defmodule Statechart.Tree do
   - descendents: all nodes that have the current node as one of their ancestors
   - parent: the parent of the node in question
   - children: ancestors, but only one level deep
-  - TODO is there a name for path + descendents? It's awkward referring to this as "path and descendents"
   """
+
+  # TODO move the above definitions to type and typedocs
 
   alias Statechart.Node
   alias Statechart.Tree.Insertable

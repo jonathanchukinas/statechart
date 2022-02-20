@@ -12,7 +12,6 @@ defmodule Statechart.Transitions do
   alias Statechart.Transition
 
   # TODO do I need this type?
-  # TODO :exit and :enter instead of up and down
   @type path_step :: {:exit | :enter, Node.t()}
 
   @typedoc """
@@ -44,7 +43,7 @@ defmodule Statechart.Transitions do
   @spec transition(Chart.t(), State.t(), Event.t()) ::
           {:ok, State.t()} | {:error, :something | :something_else}
   def transition(chart_spec, state, event) do
-    with {:ok, chart} <- fetch_chart(chart_spec),
+    with {:ok, chart} <- Chart.fetch_from_spec(chart_spec),
          {:ok, origin_id} <- fetch_id_by_state(chart, state),
          {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
          {:ok, target_node} <- fetch_node_by_id(chart, target_id) do
@@ -62,13 +61,11 @@ defmodule Statechart.Transitions do
     end
   end
 
-  # TODO this should be broken up. Some functionality moves out to fetch_target_id
   @spec fetch_transition_path(Chart.t(), State.t(), Event.t()) ::
           {:ok, transition_path} | {:error, atom}
   def fetch_transition_path(chart, state, event) do
     with {:ok, origin_id} <- fetch_id_by_state(chart, state),
-         {:ok, transition} <- fetch_transition(chart, origin_id, event),
-         target_id = Transition.target_id(transition),
+         {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
          {:ok, current_path} <- fetch_path_by_id(chart, origin_id),
          {:ok, destination_path} <- fetch_path_by_id(chart, target_id) do
       {:ok, do_transition_path(current_path, destination_path)}
@@ -85,8 +82,4 @@ defmodule Statechart.Transitions do
     Enum.reduce(state_path_items, destination_path_items, &[&1 | &2])
   end
 
-  # TODO move to Statechart.Chart?
-  defp fetch_chart(%Chart{} = chart), do: {:ok, chart}
-  defp fetch_chart(module) when is_atom(module), do: Chart.fetch_from_module(module)
-  defp fetch_chart(_), do: {:error, :definition_not_found}
 end

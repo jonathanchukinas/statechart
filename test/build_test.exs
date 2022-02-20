@@ -1,10 +1,3 @@
-# TODO test for e.g. defstate called out of place
-# TODO test that a state cannot be defined twice
-# TODO test that a bad name raises
-# TODO test that target must be a descendent
-# TODO test that the builder checks for transitions that don't resolve in leaf nodes
-# TODO check and test that a default can only be given to a branch node
-
 defmodule Statechart.BuildTest do
   use ExUnit.Case
   use Statechart.Chart
@@ -19,19 +12,13 @@ defmodule Statechart.BuildTest do
         end
       end
     end
-
-    test "injects a __chart__/0 function into caller" do
-      defmodule SingleDefchart do
-        use Statechart
-        defchart do: nil
-      end
-
-      # TODO Investigate all other __chart__ calls
-      assert {:ok, %Chart{}} = Chart.fetch_from_module(SingleDefchart)
-    end
   end
 
-  describe "defstate/1" do
+  describe "defstate/1 or /2" do
+    test "raises if called outside of defchart block"
+    test "raises if default target is not a descendent"
+    test "raises if default opt if given to a leaf node"
+
     test "do-block is optional" do
       defmodule DefstateWithNoDoBlock do
         use Statechart
@@ -41,9 +28,7 @@ defmodule Statechart.BuildTest do
         end
       end
     end
-  end
 
-  describe "defstate/2" do
     test "correctly nests states" do
       defmodule Sample do
         use Statechart
@@ -124,8 +109,8 @@ defmodule Statechart.BuildTest do
   describe "transition/2 & >>>/2" do
     # This should test for the line number
     test "raises a StatechartBuildError on invalid event names"
+    test "raises if target does not resolve to a leaf node"
 
-    # TODO test for self, path, and ancestors
     test "raises if one of node's ancestors already has a transition with this event" do
       assert_raise StatechartBuildError, ~r/events must be unique/, fn ->
         defmodule AmbiguousEventInAncestor do

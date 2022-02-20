@@ -229,7 +229,7 @@ defmodule Statechart.Build do
       raise StatechartBuildError, "expect event to be an atom or module, got: #{inspect(event)}"
     end
 
-    if transition = find_transition_among_path_and_ancestors(statechart_def, node_id, event) do
+    if transition = find_transition_in_family_tree(statechart_def, node_id, event) do
       msg =
         "events must be unique within a node and among its path and descendents, the event " <>
           inspect(event) <>

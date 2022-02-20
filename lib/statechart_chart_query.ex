@@ -96,20 +96,12 @@ defmodule Statechart.Chart.Query do
     end
   end
 
-  # TODO needed?
   @doc """
-  Confirm that this event doesn't already exist in the path/ancestors.
+  If it exists, return a transition that exists among a node's [family tree](`t:Statechart.Tree.family_tree/0`)
   """
-  @spec validate_event_by_id(t, Event.t(), Node.id()) :: :ok | {:error, Transition.t()}
-  def validate_event_by_id(chart, event, id) do
-    case fetch_transition_by_id_and_event(chart, id, event) do
-      {:ok, _transition} -> {:error, :duplicate_event}
-      {:error, _reason} -> :ok
-    end
-  end
-
-  # TODO doc and spec
-  def find_transition_among_path_and_ancestors(chart, id, event) do
+  @spec find_transition_in_family_tree(Chart.t(), Node.id(), Event.t()) ::
+          Transition.t() | nil
+  def find_transition_in_family_tree(chart, id, event) do
     case fetch_transition_by_id_and_event(chart, id, event) do
       {:ok, %Transition{} = transition} -> transition
       _ -> nil

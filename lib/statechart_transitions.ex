@@ -11,9 +11,6 @@ defmodule Statechart.Transitions do
   alias Statechart.State
   alias Statechart.Transition
 
-  # TODO do I need this type?
-  @type path_step :: {:exit | :enter, Node.t()}
-
   @typedoc """
   To travel from one node to another, you have to travel up the origin node's path
   and then down the target node's path. This type describes that path.
@@ -24,7 +21,7 @@ defmodule Statechart.Transitions do
 
   CONSIDER: come up with a better term for it? One that doesn't use the word `path`?
   """
-  @type transition_path :: [path_step]
+  @type transition_path :: [{:exit | :enter, Node.t()}]
 
   #####################################
   # API

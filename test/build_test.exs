@@ -99,7 +99,7 @@ defmodule Statechart.BuildTest do
 
       {:ok, chart} = Chart.fetch(Sample)
       {:ok, 5 = d_node_id} = fetch_id_by_state(chart, :d)
-      {:ok, d_path} = fetch_path_by_id(chart, d_node_id)
+      {:ok, d_path} = fetch_path_nodes_by_id(chart, d_node_id)
       assert length(d_path) == 5
       d_path_as_atoms = Enum.map(d_path, &Node.name/1)
       assert d_path_as_atoms == ~w/root a b c d/a

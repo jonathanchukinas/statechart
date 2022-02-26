@@ -71,8 +71,8 @@ defmodule Statechart.Transitions do
   @spec fetch_actions(Chart.t(), Node.id(), Node.id()) ::
           {:ok, [Node.action_fn()]} | {:error, atom}
   def fetch_actions(chart, origin_id, destination_id) when is_integer(origin_id) do
-    with {:ok, current_path} <- fetch_path_by_id(chart, origin_id),
-         {:ok, destination_path} <- fetch_path_by_id(chart, destination_id) do
+    with {:ok, current_path} <- fetch_path_nodes_by_id(chart, origin_id),
+         {:ok, destination_path} <- fetch_path_nodes_by_id(chart, destination_id) do
       actions =
         do_transition_path(current_path, destination_path)
         |> Enum.flat_map(fn {action_type, node} ->
@@ -89,8 +89,8 @@ defmodule Statechart.Transitions do
   def fetch_transition_path(chart, state, event) do
     with {:ok, origin_id} <- fetch_id_by_state(chart, state),
          {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
-         {:ok, current_path} <- fetch_path_by_id(chart, origin_id),
-         {:ok, destination_path} <- fetch_path_by_id(chart, target_id) do
+         {:ok, current_path} <- fetch_path_nodes_by_id(chart, origin_id),
+         {:ok, destination_path} <- fetch_path_nodes_by_id(chart, target_id) do
       {:ok, do_transition_path(current_path, destination_path)}
     end
   end

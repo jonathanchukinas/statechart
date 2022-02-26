@@ -54,10 +54,6 @@ defmodule Statechart.TransitionsTest do
 
   test "root can have a default"
 
-  # TODO is this already tested somewhere else?
-  # TODO what to call such an event? invalid?
-  test "fail: an event not in current path returns an error tuple"
-
   describe "transition/3" do
     defmodule SimpleToggle do
       use Statechart
@@ -77,6 +73,10 @@ defmodule Statechart.TransitionsTest do
         end
       end
     end
+
+    # TODO is this already tested somewhere else?
+    # CONSIDER what to call such an event? invalid?
+    test "fail: an event not in current path returns an error tuple"
 
     test "a transition registered directly on current node allows a transition" do
       assert {:ok, :off} = Transitions.transition(SimpleToggle, :on, :TOGGLE)
@@ -107,8 +107,6 @@ defmodule Statechart.TransitionsTest do
       defchart do
         :GOTO_BRANCH_WITH_DEFAULT >>> :branch_with_default
         :GOTO_BRANCH_NO_DEFAULT >>> :branch_no_default
-
-        # TODO do i already test for raising when builder tries to create a transition with no resolution?
         :GOTO_BRANCH_NO_DEFAULT_BUT_NO_RESOLUTION >>> :branch_with_default_but_no_resolution
 
         defstate :branch_with_default_but_no_resolution, default: :branch_no_default do

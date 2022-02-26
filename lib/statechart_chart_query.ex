@@ -90,7 +90,7 @@ defmodule Statechart.Chart.Query do
   @spec fetch_transition(t, Node.id(), Event.t()) ::
           {:ok, Transition.t()} | {:error, :event_not_found}
   def fetch_transition(chart, node_id, event) do
-    with {:ok, nodes} <- Tree.fetch_path_by_id(chart, node_id),
+    with {:ok, nodes} <- Tree.fetch_path_nodes_by_id(chart, node_id),
          {:ok, transition} <- fetch_transition_from_nodes(nodes, event) do
       {:ok, transition}
     end

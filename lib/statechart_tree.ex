@@ -139,7 +139,7 @@ defmodule Statechart.Tree do
 
   @spec fetch_family_tree_by_id(t, Node.id()) :: {:ok, family_tree}
   def fetch_family_tree_by_id(tree, node_id) do
-    with {:ok, path} <- fetch_path_by_id(tree, node_id),
+    with {:ok, path} <- fetch_path_nodes_by_id(tree, node_id),
          {:ok, descendents} <- fetch_descendents_by_id(tree, node_id) do
       {:ok, path ++ descendents}
     else
@@ -203,7 +203,7 @@ defmodule Statechart.Tree do
   @spec fetch_parent_by_id(t, Node.id()) ::
           {:ok, Node.t()} | {:error, :id_not_found} | {:error, :no_parent}
   def fetch_parent_by_id(tree, child_id) do
-    with {:ok, path} <- fetch_path_by_id(tree, child_id),
+    with {:ok, path} <- fetch_path_nodes_by_id(tree, child_id),
          %Node{} = node <- Enum.at(path, -2, error_no_parent()) do
       {:ok, node}
     else
@@ -222,9 +222,8 @@ defmodule Statechart.Tree do
     end
   end
 
-  # TODO rename fetch_path_nodes_by_id
-  @spec fetch_path_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, :id_not_found}
-  def fetch_path_by_id(tree, id) do
+  @spec fetch_path_nodes_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, :id_not_found}
+  def fetch_path_nodes_by_id(tree, id) do
     [terminator | rest] =
       tree
       |> nodes_up_to_and_incl_node_id(id)

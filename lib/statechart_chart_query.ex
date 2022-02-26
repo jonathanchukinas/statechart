@@ -11,6 +11,18 @@ defmodule Statechart.Chart.Query do
 
   @type t :: Chart.t()
 
+  @typedoc """
+  To travel from one node to another, you have to travel up the origin node's path
+  and then down the target node's path. This type describes that path.
+  You rarely ever go all the way up to the root node. Instead, you travel up to where
+  the two paths meet.
+
+  This is important for handling the exit/enter actions for each node along this path.
+
+  CONSIDER: come up with a better term for it? One that doesn't use the word `path`?
+  """
+  @type transition_path :: [{Node.action_type(), Node.t()}]
+
   #####################################
   # REDUCERS
 
@@ -27,6 +39,21 @@ defmodule Statechart.Chart.Query do
 
   #####################################
   # CONVERTERS
+
+  @spec fetch_actions(Chart.t(), Node.id(), Node.id()) ::
+          {:ok, [Node.action_fn()]} | {:error, atom}
+  def fetch_actions(chart, origin_id, destination_id) when is_integer(origin_id) do
+    with {:ok, current_path} <- Tree.fetch_path_nodes_by_id(chart, origin_id),
+         {:ok, destination_path} <- Tree.fetch_path_nodes_by_id(chart, destination_id) do
+      actions =
+        do_transition_path(current_path, destination_path)
+        |> Enum.flat_map(fn {action_type, node} ->
+          Node.actions(node, action_type)
+        end)
+
+      {:ok, actions}
+    end
+  end
 
   @spec fetch_node_by_metadata(t, Metadata.t()) ::
           {:ok, Node.maybe_not_inserted()} | {:error, :no_metadata_match}
@@ -176,5 +203,16 @@ defmodule Statechart.Chart.Query do
       nil -> {:error, :event_not_found}
       transition -> {:ok, transition}
     end
+  end
+
+  @spec do_transition_path([Node.t()], [Node.t()]) :: transition_path
+  defp do_transition_path([head1, head2 | state_tail], [head1, head2 | destination_tail]) do
+    do_transition_path([head2 | state_tail], [head2 | destination_tail])
+  end
+
+  defp do_transition_path([head1 | state_tail], [head1 | destination_tail]) do
+    state_path_items = Stream.map(state_tail, &{:exit, &1})
+    destination_path_items = Enum.map(destination_tail, &{:enter, &1})
+    Enum.reduce(state_path_items, destination_path_items, &[&1 | &2])
   end
 end

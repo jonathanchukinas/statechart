@@ -145,30 +145,23 @@ defmodule Statechart.Node do
   defimpl Inspect do
     alias Statechart.Node
 
-    # TODO having these two different ones is getting unwieldy. DRY it up.
     def inspect(%Node{name: :root} = node, opts) do
-      fields = [
-        id: node.id,
-        lft_rgt: {node.lft, node.rgt},
-        meta: node.metadata,
-        transitions: node.transitions,
-        actions: node.actions
-      ]
-
+      fields = [id: node.id] ++ standard_fields(node)
       Statechart.Util.Inspect.custom_kv("Root", fields, opts)
     end
 
     def inspect(node, opts) do
-      fields = [
-        id: node.id,
+      fields = [id: node.id, name: node.name] ++ standard_fields(node)
+      Statechart.Util.Inspect.custom_kv("Node", fields, opts)
+    end
+
+    defp standard_fields(node) do
+      [
         lft_rgt: {node.lft, node.rgt},
-        name: node.name,
         meta: node.metadata,
         transitions: node.transitions,
         actions: node.actions
       ]
-
-      Statechart.Util.Inspect.custom_kv("Node", fields, opts)
     end
   end
 end

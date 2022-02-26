@@ -28,9 +28,8 @@ defmodule Statechart.Interpreter do
       %__MODULE__{chart_module: chart_module, context: context}
     else
       _ ->
-        # TODO again, I don't like the direct ref to __chart__
-        raise "expected chart_module to be a module whose __chart__/0 " <>
-                "function returns a Statechart.Chart struct, " <>
+        raise "expected chart_module to be a module that defines a statechart " <>
+                "via Statechart.defchart/2, " <>
                 "got: #{inspect(chart_module)}"
     end
   end

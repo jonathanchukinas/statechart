@@ -27,25 +27,25 @@ defmodule Statechart.TransitionsTest do
     end
   end
 
-  describe "fetch_transition_path/3" do
-    test "returns a list of exit/enter node tuples" do
-      {:ok, chart} = Chart.fetch(Sample)
-      {:ok, transition_path} = Transitions.fetch_transition_path(chart, :d, :GOTO_G)
+  # describe "fetch_transition_path/3" do
+  #   test "returns a list of exit/enter node tuples" do
+  #     {:ok, chart} = Chart.fetch(Sample)
+  #     {:ok, transition_path} = Transitions.fetch_transition_path(chart, :d, :GOTO_G)
 
-      transition_path_atoms =
-        for {direction, node} <- transition_path, do: {direction, Node.name(node)}
+  #     transition_path_atoms =
+  #       for {direction, node} <- transition_path, do: {direction, Node.name(node)}
 
-      assert transition_path_atoms == [
-               {:exit, :d},
-               {:exit, :c},
-               {:exit, :b},
-               {:exit, :a},
-               {:enter, :e},
-               {:enter, :f},
-               {:enter, :g}
-             ]
-    end
-  end
+  #     assert transition_path_atoms == [
+  #              {:exit, :d},
+  #              {:exit, :c},
+  #              {:exit, :b},
+  #              {:exit, :a},
+  #              {:enter, :e},
+  #              {:enter, :f},
+  #              {:enter, :g}
+  #            ]
+  #   end
+  # end
 
   test "fetch_target_id/?"
   test "an event targetting a branch node must provides a default path to a leaf node"
@@ -73,10 +73,6 @@ defmodule Statechart.TransitionsTest do
         end
       end
     end
-
-    # TODO is this already tested somewhere else?
-    # CONSIDER what to call such an event? invalid?
-    test "fail: an event not in current path returns an error tuple"
 
     test "a transition registered directly on current node allows a transition" do
       assert {:ok, :off} = Transitions.transition(SimpleToggle, :on, :TOGGLE)

@@ -18,6 +18,7 @@ defmodule Statechart.Build do
 
   use TypedStruct
   use Statechart.Chart
+  require Statechart.Node
   alias __MODULE__
   alias Statechart.Build.Acc
   alias Statechart.Event
@@ -210,6 +211,54 @@ defmodule Statechart.Build do
   @spec __defstate_exit__(Macro.Env.t()) :: :ok
   def __defstate_exit__(env) do
     _current_id = Acc.pop_id!(env)
+    :ok
+  end
+
+  #####################################
+  # ON EXIT / ENTER
+
+  # TODO test response to bad input
+  # TODO test that a subchart can register an action on the root and that it persists when the sub
+  # chart is injected into a parent chart.
+  @doc """
+  Register a function to be executed anytime a given node is entered or exited.
+  """
+  defmacro on([{action_type, action_fn}] = arg) do
+    # TODO add test for this
+    unless Node.is_action_type(action_type) do
+      msg =
+        "the on/1 macro expects a single-item keyword list with a " <>
+          "key of either :enter or :exit, got: #{inspect(arg)}"
+
+      raise StatechartBuildError, msg
+    end
+
+    quote do
+      Build.__action__(
+        @__sc_build_step__,
+        __ENV__,
+        unquote(action_type),
+        unquote(action_fn)
+      )
+    end
+  end
+
+  # TODO does action_fn take only a context? It should.
+  @doc false
+  @spec __action__(build_step, Macro.Env.t(), Node.action_type(), Node.action_fn()) :: :ok
+  def __action__(:insert_nodes, env, action_type, action_fn) do
+    # TODO rename Acc.chart
+    chart = Acc.statechart_def(env)
+    current_id = Acc.current_id(env)
+
+    {:ok, new_chart} =
+      update_node_by_id(chart, current_id, &Node.push_action(&1, action_type, action_fn))
+
+    Acc.put_chart(env, new_chart)
+    :ok
+  end
+
+  def __action__(_build_step, _env, _action_type, _action_fn) do
     :ok
   end
 

@@ -1,4 +1,10 @@
-locals_without_parens = [defchart: 1, defchart: 2, defstate: 1, defstate: 2]
+locals_without_parens = [
+  defchart: 1,
+  defchart: 2,
+  defstate: 1,
+  defstate: 2,
+  on: 1
+]
 
 [
   import_deps: [:typed_struct, :stream_data],

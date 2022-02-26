@@ -7,6 +7,9 @@ defmodule Statechart.Node do
   # @type id :: Statechart.HasIdRefs.id()
   @type id :: pos_integer
 
+  @type action_type :: :exit | :enter
+  @type action_fn :: (State.t(), Context.t() -> Context.t())
+
   getter_struct do
     field :id, id, default: 0
     field :name, name
@@ -15,6 +18,7 @@ defmodule Statechart.Node do
     field :metadata, Metadata.t(), enforce: false
     field :transitions, [Transition.t()], default: []
     field :default, id, enforce: nil
+    field :actions, [{action_type, action_fn}], default: []
   end
 
   @type not_inserted ::
@@ -28,6 +32,8 @@ defmodule Statechart.Node do
   @type maybe_not_inserted :: t | not_inserted
   @type reducer :: (t -> t)
   @type name :: atom
+
+  defguard is_action_type(maybe_action_type) when maybe_action_type in ~w/exit enter/a
 
   #####################################
   # CONSTRUCTORS
@@ -73,6 +79,12 @@ defmodule Statechart.Node do
     end
   end
 
+  @spec push_action(t, action_type, action_fn) :: t
+  def push_action(%__MODULE__{actions: actions} = node, action_type, fun)
+      when is_action_type(action_type) do
+    %__MODULE__{node | actions: [{action_type, fun} | actions]}
+  end
+
   #####################################
   # CONVERTERS
 
@@ -91,6 +103,13 @@ defmodule Statechart.Node do
       nil -> {:error, :no_default}
       id when is_integer(id) -> {:ok, id}
     end
+  end
+
+  @spec actions(t, action_type) :: [Node.action_fn()]
+  def actions(%__MODULE__{actions: actions}, action_type) when is_action_type(action_type) do
+    actions
+    |> Stream.filter(fn {i_action_type, _action_fn} -> i_action_type == action_type end)
+    |> Stream.map(fn {_action_type, action_fn} -> action_fn end)
   end
 
   #####################################
@@ -126,12 +145,14 @@ defmodule Statechart.Node do
   defimpl Inspect do
     alias Statechart.Node
 
+    # TODO having these two different ones is getting unwieldy. DRY it up.
     def inspect(%Node{name: :root} = node, opts) do
       fields = [
         id: node.id,
         lft_rgt: {node.lft, node.rgt},
         meta: node.metadata,
-        transitions: node.transitions
+        transitions: node.transitions,
+        actions: node.actions
       ]
 
       Statechart.Util.Inspect.custom_kv("Root", fields, opts)
@@ -143,7 +164,8 @@ defmodule Statechart.Node do
         lft_rgt: {node.lft, node.rgt},
         name: node.name,
         meta: node.metadata,
-        transitions: node.transitions
+        transitions: node.transitions,
+        actions: node.actions
       ]
 
       Statechart.Util.Inspect.custom_kv("Node", fields, opts)

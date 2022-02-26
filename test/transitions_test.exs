@@ -52,8 +52,6 @@ defmodule Statechart.TransitionsTest do
 
   test "the builder raises on events that target a branch node that doesn't have a default path to a leaf node"
 
-  test "on_exit events fire"
-  test "on_enter events fire"
   test "root can have a default"
 
   # TODO is this already tested somewhere else?
@@ -137,6 +135,35 @@ defmodule Statechart.TransitionsTest do
     test "fail: will return an error tuple if the branch node has no default leaf node" do
       assert {:error, :no_default_leaf} =
                Transitions.transition(DefaultsTest, :b, :GOTO_BRANCH_NO_DEFAULT)
+    end
+  end
+
+  describe "on_exit and on_exit" do
+    test "on-exit & -enter actions fire" do
+      defmodule OnExitEnterTest do
+        use Statechart
+
+        def action_put_a(_context), do: IO.puts("put a")
+        def action_put_b(_context), do: IO.puts("put b")
+
+        defchart do
+          :GOTO_B >>> :b
+
+          defstate :a do
+            on exit: &__MODULE__.action_put_a/1
+          end
+
+          defstate :b do
+            on enter: &__MODULE__.action_put_b/1
+          end
+        end
+      end
+
+      captured_io =
+        ExUnit.CaptureIO.capture_io(fn -> Transitions.transition(OnExitEnterTest, :a, :GOTO_B) end)
+
+      assert captured_io =~ "put a"
+      assert captured_io =~ "put b"
     end
   end
 end

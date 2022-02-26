@@ -21,7 +21,7 @@ defmodule Statechart.Transitions do
 
   CONSIDER: come up with a better term for it? One that doesn't use the word `path`?
   """
-  @type transition_path :: [{:exit | :enter, Node.t()}]
+  @type transition_path :: [{Node.action_type(), Node.t()}]
 
   #####################################
   # API
@@ -38,11 +38,20 @@ defmodule Statechart.Transitions do
   @spec transition(Chart.spec(), State.t(), Event.t()) ::
           {:ok, State.t()} | {:error, :something | :something_else}
   def transition(chart_spec, state, event) do
+    context = nil
+
     with {:ok, chart} <- Chart.fetch(chart_spec),
          {:ok, origin_id} <- fetch_id_by_state(chart, state),
          {:ok, target_id} <- fetch_target_id(chart, origin_id, event),
          {:ok, target_node} <- fetch_node_by_id(chart, target_id),
-         {:ok, destination_node} <- fetch_default_leaf_node(chart, target_node) do
+         {:ok, destination_node} <- fetch_default_leaf_node(chart, target_node),
+         destination_id = Node.id(destination_node),
+         {:ok, actions} <- fetch_actions(chart, origin_id, destination_id) do
+      _context =
+        Enum.reduce(actions, context, fn action, context ->
+          action.(context)
+        end)
+
       {:ok, Node.name(destination_node)}
     end
   end
@@ -54,6 +63,23 @@ defmodule Statechart.Transitions do
     with {:ok, transition} <- fetch_transition(chart, origin_id, event),
          target_id = Transition.target_id(transition) do
       {:ok, target_id}
+    end
+  end
+
+  # TODO move this to Query
+  # TODO delete the other clause
+  @spec fetch_actions(Chart.t(), Node.id(), Node.id()) ::
+          {:ok, [Node.action_fn()]} | {:error, atom}
+  def fetch_actions(chart, origin_id, destination_id) when is_integer(origin_id) do
+    with {:ok, current_path} <- fetch_path_by_id(chart, origin_id),
+         {:ok, destination_path} <- fetch_path_by_id(chart, destination_id) do
+      actions =
+        do_transition_path(current_path, destination_path)
+        |> Enum.flat_map(fn {action_type, node} ->
+          Node.actions(node, action_type)
+        end)
+
+      {:ok, actions}
     end
   end
 
@@ -69,6 +95,7 @@ defmodule Statechart.Transitions do
     end
   end
 
+  @spec do_transition_path([Node.t()], [Node.t()]) :: transition_path
   defp do_transition_path([head1, head2 | state_tail], [head1, head2 | destination_tail]) do
     do_transition_path([head2 | state_tail], [head2 | destination_tail])
   end

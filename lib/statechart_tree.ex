@@ -94,7 +94,7 @@ defmodule Statechart.Tree do
     put_nodes(tree, [fun.(root) | tail])
   end
 
-  @spec update_node_by_id(t, Node.id(), Node.reducer()) :: t
+  @spec update_node_by_id(t, Node.id(), Node.reducer()) :: {:ok, t} | {:error, :id_not_found}
   def update_node_by_id(tree, id, update_fn) do
     tree
     |> fetch_nodes!
@@ -222,6 +222,7 @@ defmodule Statechart.Tree do
     end
   end
 
+  # TODO rename fetch_path_nodes_by_id
   @spec fetch_path_by_id(t, Node.id()) :: {:ok, [Node.t()]} | {:error, :id_not_found}
   def fetch_path_by_id(tree, id) do
     [terminator | rest] =

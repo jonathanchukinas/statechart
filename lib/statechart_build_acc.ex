@@ -40,6 +40,7 @@ defmodule Statechart.Build.Acc do
 
   # CONVERTERS
 
+  # TODO rename chart
   @spec statechart_def(Macro.Env.t()) :: Chart.t()
   def statechart_def(%Macro.Env{module: module}) do
     module

@@ -137,6 +137,8 @@ defmodule Statechart.TransitionsTest do
   end
 
   describe "on_exit and on_exit" do
+    test "actions registered on a subchart's root persis after being inserted into a parent chart"
+
     test "on-exit & -enter actions fire" do
       defmodule OnExitEnterTest do
         use Statechart

@@ -180,4 +180,8 @@ defmodule Statechart.BuildTest do
       end
     end
   end
+
+  describe "on/1" do
+    test "raises on invalid input"
+  end
 end

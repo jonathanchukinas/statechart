@@ -73,12 +73,12 @@ defmodule Statechart.Build do
   end
 
   defmacro __before_compile__(env) do
-    statechart_def = Acc.statechart_def(env)
+    chart = Acc.chart(env)
     Acc.delete_attribute(env)
 
     quote do
       @spec __chart__() :: t
-      def __chart__, do: unquote(Macro.escape(statechart_def))
+      def __chart__, do: unquote(Macro.escape(chart))
     end
   end
 
@@ -105,10 +105,10 @@ defmodule Statechart.Build do
       raise StatechartBuildError, "Only one defchart call may be made per module"
     end
 
-    statechart_def = Chart.from_env(env)
+    chart = Chart.from_env(env)
     Module.register_attribute(env.module, :__sc_build_step__, [])
     Module.put_attribute(env.module, :__sc_defchart__, nil)
-    Acc.put_new(env, statechart_def)
+    Acc.put_new(env, chart)
     :ok
   end
 
@@ -148,15 +148,15 @@ defmodule Statechart.Build do
   @doc false
   @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name(), Keyword.t()) :: :ok
   def __defstate_enter__(:insert_nodes = _build_step, env, name, _opts) do
-    old_definition = Acc.statechart_def(env)
+    old_chart = Acc.chart(env)
     parent_id = Acc.current_id(env)
 
-    with :ok <- validate_name!(old_definition, name),
+    with :ok <- validate_name!(old_chart, name),
          new_node = Node.new(name, metadata: Metadata.from_env(env)),
-         {:ok, new_definition} <- insert(old_definition, new_node, parent_id),
-         {:ok, new_node_id} <- fetch_id_by_state(new_definition, name) do
+         {:ok, new_chart} <- insert(old_chart, new_node, parent_id),
+         {:ok, new_node_id} <- fetch_id_by_state(new_chart, name) do
       env
-      |> Acc.put_chart(new_definition)
+      |> Acc.put_chart(new_chart)
       |> Acc.push_current_id(new_node_id)
 
       :ok
@@ -167,7 +167,7 @@ defmodule Statechart.Build do
   end
 
   def __defstate_enter__(:insert_transitions_and_defaults, env, _name, opts) do
-    chart = Acc.statechart_def(env)
+    chart = Acc.chart(env)
     {:ok, origin_node} = fetch_node_by_metadata(chart, Metadata.from_env(env))
     Acc.push_current_id(env, Node.id(origin_node))
 
@@ -202,7 +202,7 @@ defmodule Statechart.Build do
   end
 
   def __defstate_enter__(_build_step, env, _name, _ops) do
-    {:ok, node} = fetch_node_by_metadata(Acc.statechart_def(env), Metadata.from_env(env))
+    {:ok, node} = fetch_node_by_metadata(Acc.chart(env), Metadata.from_env(env))
     Acc.push_current_id(env, Node.id(node))
     :ok
   end
@@ -217,14 +217,10 @@ defmodule Statechart.Build do
   #####################################
   # ON EXIT / ENTER
 
-  # TODO test response to bad input
-  # TODO test that a subchart can register an action on the root and that it persists when the sub
-  # chart is injected into a parent chart.
   @doc """
   Register a function to be executed anytime a given node is entered or exited.
   """
   defmacro on([{action_type, action_fn}] = arg) do
-    # TODO add test for this
     unless Node.is_action_type(action_type) do
       msg =
         "the on/1 macro expects a single-item keyword list with a " <>
@@ -243,12 +239,10 @@ defmodule Statechart.Build do
     end
   end
 
-  # TODO does action_fn take only a context? It should.
   @doc false
   @spec __action__(build_step, Macro.Env.t(), Node.action_type(), Node.action_fn()) :: :ok
   def __action__(:insert_nodes, env, action_type, action_fn) do
-    # TODO rename Acc.chart
-    chart = Acc.statechart_def(env)
+    chart = Acc.chart(env)
     current_id = Acc.current_id(env)
 
     {:ok, new_chart} =
@@ -283,14 +277,14 @@ defmodule Statechart.Build do
 
   @spec __transition__(build_step, Macro.Env.t(), Event.t(), Node.name()) :: :ok
   def __transition__(:insert_transitions_and_defaults, env, event, target_name) do
-    statechart_def = Acc.statechart_def(env)
+    chart = Acc.chart(env)
     node_id = Acc.current_id(env)
 
     unless :ok == Event.validate(event) do
       raise StatechartBuildError, "expect event to be an atom or module, got: #{inspect(event)}"
     end
 
-    if transition = find_transition_in_family_tree(statechart_def, node_id, event) do
+    if transition = find_transition_in_family_tree(chart, node_id, event) do
       msg =
         "events must be unique within a node and among its path and descendents, the event " <>
           inspect(event) <>
@@ -301,11 +295,11 @@ defmodule Statechart.Build do
     end
 
     with {:ok, target_id} <-
-           fetch_id_by_state(statechart_def, target_name),
+           fetch_id_by_state(chart, target_name),
          transition = Transition.new(event, target_id, Metadata.from_env(env)),
-         {:ok, statechart_def} <-
-           update_node_by_id(statechart_def, node_id, &Node.put_transition(&1, transition)) do
-      Acc.put_chart(env, statechart_def)
+         {:ok, chart} <-
+           update_node_by_id(chart, node_id, &Node.put_transition(&1, transition)) do
+      Acc.put_chart(env, chart)
       :ok
     else
       {:error, error} -> raise to_string(error)
@@ -335,14 +329,14 @@ defmodule Statechart.Build do
       %Node{node | name: name, metadata: metadata}
     end
 
-    with parent_definition = Acc.statechart_def(env),
+    with parent_chart = Acc.chart(env),
          parent_id = Acc.current_id(env),
-         :ok <- validate_name!(parent_definition, name),
-         child_definition <- fetch_definition!(module, Metadata.line(metadata)),
-         new_child_definition = update_root(child_definition, update_child_root),
-         {:ok, new_parent_definition} <-
-           insert(parent_definition, new_child_definition, parent_id) do
-      Acc.put_chart(env, new_parent_definition)
+         :ok <- validate_name!(parent_chart, name),
+         child_chart <- fetch_chart!(module, Metadata.line(metadata)),
+         new_child_chart = update_root(child_chart, update_child_root),
+         {:ok, new_parent_chart} <-
+           insert(parent_chart, new_child_chart, parent_id) do
+      Acc.put_chart(env, new_parent_chart)
     end
 
     :ok
@@ -378,7 +372,7 @@ defmodule Statechart.Build do
   # VALIDATION
 
   # CONSIDER making this specific to subchart
-  defp fetch_definition!(module, line_number) do
+  defp fetch_chart!(module, line_number) do
     case Chart.fetch(module) do
       {:ok, chart} ->
         chart

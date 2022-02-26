@@ -31,8 +31,8 @@ defmodule Statechart.TreeTest do
 
     build_tree = fn nodes_and_parent_ids ->
       Enum.reduce(nodes_and_parent_ids, empty_tree, fn {node, parent_id}, tree ->
-        {:ok, statechart_def} = Tree.insert(tree, node, parent_id)
-        statechart_def
+        {:ok, chart} = Tree.insert(tree, node, parent_id)
+        chart
       end)
     end
 
@@ -98,7 +98,7 @@ defmodule Statechart.TreeTest do
   property "Once inserted, a node's parent never changes", %{tree_and_orig_inputs: generator} do
     check all(
             %{
-              tree: statechart_def,
+              tree: chart,
               nodes_and_parent_ids: nodes_and_parent_ids
             } <- generator
           ) do
@@ -113,7 +113,7 @@ defmodule Statechart.TreeTest do
         expected_child_names = Enum.sort(child_names)
 
         actual_child_names =
-          statechart_def
+          chart
           |> Tree.fetch_children_by_id!(parent_id)
           |> Stream.map(&Node.name/1)
           |> Enum.sort()

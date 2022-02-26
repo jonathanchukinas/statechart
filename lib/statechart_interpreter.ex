@@ -22,16 +22,16 @@ defmodule Statechart.Interpreter do
   Returns a t:__MODULE__.t/0 struct that acts as a persistent statechart.
   """
   @spec new(module, any) :: t
-  def new(definition_module, context \\ nil) when is_atom(definition_module) do
-    with true <- {:chart, 0} in definition_module.__info__(:functions),
-         %Chart{} <- definition_from_module(definition_module) do
-      %__MODULE__{chart_module: definition_module, context: context}
+  def new(chart_module, context \\ nil) when is_atom(chart_module) do
+    with true <- {:chart, 0} in chart_module.__info__(:functions),
+         %Chart{} <- chart_from_module(chart_module) do
+      %__MODULE__{chart_module: chart_module, context: context}
     else
       _ ->
         # TODO again, I don't like the direct ref to __chart__
-        raise "expected definition_module to be a module whose __chart__/0 " <>
+        raise "expected chart_module to be a module whose __chart__/0 " <>
                 "function returns a Statechart.Chart struct, " <>
-                "got: #{inspect(definition_module)}"
+                "got: #{inspect(chart_module)}"
     end
   end
 
@@ -39,13 +39,13 @@ defmodule Statechart.Interpreter do
   # CONVERTERS
 
   def chart(%__MODULE__{chart_module: module}) do
-    definition_from_module(module)
+    chart_from_module(module)
   end
 
   #####################################
   # HELPERS
 
-  defp definition_from_module(module) do
+  defp chart_from_module(module) do
     module.chart()
   end
 end

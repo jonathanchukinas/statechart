@@ -16,10 +16,9 @@ defmodule Statechart.Chart.Query do
 
   @spec update_node_by_name(t, Node.name(), (Node.t() -> Node.t())) ::
           {:ok, t} | {:error, :id_not_found | :name_not_found | :ambiguous_name}
-  def update_node_by_name(statechart_def, name, update_fn) do
-    with {:ok, node} <- fetch_node_by_name(statechart_def, name),
-         {:ok, _statechart_def} = result <-
-           Tree.update_node_by_id(statechart_def, Node.id(node), update_fn) do
+  def update_node_by_name(chart, name, update_fn) do
+    with {:ok, node} <- fetch_node_by_name(chart, name),
+         {:ok, _chart} = result <- Tree.update_node_by_id(chart, Node.id(node), update_fn) do
       result
     else
       {:error, _reason} = error -> error
@@ -31,8 +30,8 @@ defmodule Statechart.Chart.Query do
 
   @spec fetch_node_by_metadata(t, Metadata.t()) ::
           {:ok, Node.maybe_not_inserted()} | {:error, :no_metadata_match}
-  def fetch_node_by_metadata(statechart_def, metadata) do
-    statechart_def
+  def fetch_node_by_metadata(chart, metadata) do
+    chart
     |> IsTree.fetch_nodes!()
     |> Enum.find(fn node -> Node.metadata(node) == metadata end)
     |> case do
@@ -43,8 +42,8 @@ defmodule Statechart.Chart.Query do
 
   @spec fetch_node_by_name(t, atom) ::
           {:ok, Node.t()} | {:error, :name_not_found} | {:error, :ambiguous_name}
-  def fetch_node_by_name(statechart_def, name) when is_atom(name) do
-    statechart_def
+  def fetch_node_by_name(chart, name) when is_atom(name) do
+    chart
     |> local_nodes()
     |> Enum.filter(fn node -> Node.name(node) == name end)
     |> case do
@@ -154,8 +153,8 @@ defmodule Statechart.Chart.Query do
   #####################################
   # CONVERTERS (private)
 
-  defp do_local_nodes(%Chart{nodes: nodes} = statechart_def) do
-    {:ok, tree_module} = MetadataAccess.fetch_module(statechart_def)
+  defp do_local_nodes(%Chart{nodes: nodes} = chart) do
+    {:ok, tree_module} = MetadataAccess.fetch_module(chart)
 
     Stream.filter(nodes, fn node ->
       {:ok, node_module} = MetadataAccess.fetch_module(node)

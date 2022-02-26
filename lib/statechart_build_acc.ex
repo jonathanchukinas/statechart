@@ -7,16 +7,16 @@ defmodule Statechart.Build.Acc do
   @attr :__sc_acc__
 
   typedstruct enforce: true do
-    field :statechart_def, Chart.t()
+    field :chart, Chart.t()
     field :path_ids, [Node.id()]
   end
 
   # CONSTRUCTORS
 
-  def put_new(env, statechart_def) do
+  def put_new(env, chart) do
     acc = %__MODULE__{
-      statechart_def: statechart_def,
-      path_ids: [Tree.max_node_id(statechart_def)]
+      chart: chart,
+      path_ids: [Tree.max_node_id(chart)]
     }
 
     put_attribute(env, acc)
@@ -24,8 +24,8 @@ defmodule Statechart.Build.Acc do
 
   # REDUCERS
 
-  def put_chart(env, statechart_def) do
-    acc = %__MODULE__{get_attribute(env) | statechart_def: statechart_def}
+  def put_chart(env, chart) do
+    acc = %__MODULE__{get_attribute(env) | chart: chart}
     put_attribute(env, acc)
   end
 
@@ -40,12 +40,11 @@ defmodule Statechart.Build.Acc do
 
   # CONVERTERS
 
-  # TODO rename chart
-  @spec statechart_def(Macro.Env.t()) :: Chart.t()
-  def statechart_def(%Macro.Env{module: module}) do
+  @spec chart(Macro.Env.t()) :: Chart.t()
+  def chart(%Macro.Env{module: module}) do
     module
     |> Module.get_attribute(@attr)
-    |> Map.fetch!(:statechart_def)
+    |> Map.fetch!(:chart)
   end
 
   @spec pop_id!(Macro.Env.t()) :: Node.id()

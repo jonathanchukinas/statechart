@@ -64,26 +64,26 @@ defmodule Statechart.Chart do
   defimpl IsTree do
     alias Statechart.Chart
 
-    def put_nodes(statechart_def, nodes) do
-      struct!(statechart_def, nodes: nodes)
+    def put_nodes(chart, nodes) do
+      struct!(chart, nodes: nodes)
     end
 
-    defdelegate fetch_nodes!(statechart_def), to: Chart, as: :nodes
+    defdelegate fetch_nodes!(chart), to: Chart, as: :nodes
   end
 
   defimpl HasMetadata do
     # A tree's metadata is the metadata of its root node
 
-    def fetch(statechart_def) do
-      statechart_def
+    def fetch(chart) do
+      chart
       |> Tree.root()
       |> HasMetadata.fetch()
     end
   end
 
   # defimpl Inspect do
-  #   def inspect(statechart_def, opts) do
-  #     Util.Inspect.custom_kv("Statechart", statechart_def.nodes, opts)
+  #   def inspect(chart, opts) do
+  #     Util.Inspect.custom_kv("Statechart", chart.nodes, opts)
   #   end
   # end
 end

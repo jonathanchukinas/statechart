@@ -3,7 +3,8 @@ locals_without_parens = [
   defchart: 2,
   defstate: 1,
   defstate: 2,
-  on: 1
+  on: 1,
+  subchart: 2
 ]
 
 [

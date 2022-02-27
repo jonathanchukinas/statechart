@@ -191,9 +191,17 @@ defmodule Statechart.Chart.Query do
     end
   end
 
+  @spec local_node_names(t) :: [Node.name()]
+  def local_node_names(chart) do
+    chart
+    |> do_local_nodes
+    |> Enum.map(&Node.name/1)
+  end
+
   #####################################
   # CONVERTERS (private)
 
+  @spec do_local_nodes(t) :: Enumerable.t()
   defp do_local_nodes(%Chart{nodes: nodes} = chart) do
     {:ok, tree_module} = MetadataAccess.fetch_module(chart)
 

@@ -302,7 +302,15 @@ defmodule Statechart.Build do
       Acc.put_chart(env, chart)
       :ok
     else
-      {:error, error} -> raise to_string(error)
+      {:error, :name_not_found} ->
+        msg =
+          "Expected to find a target state with name :#{target_name} but none was found, " <>
+            "valid names are: #{inspect(local_node_names(chart))}"
+
+        raise StatechartBuildError, msg
+
+      {:error, error} ->
+        raise StatechartBuildError, to_string(error)
     end
   end
 

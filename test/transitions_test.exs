@@ -162,7 +162,40 @@ defmodule Statechart.TransitionsTest do
   end
 
   describe "on_exit and on_exit" do
-    test "for a subchart root having actions declared at both the subchart and parent levels"
+    test "for a subchart root having actions declared at both the subchart and parent levels" do
+      defmodule SubchartRootActionsBothLocalAndFromParent do
+        use Statechart
+
+        def action_entering_foo(_context), do: IO.puts("action declared by parent!")
+        def action_entering_subchart(_context), do: IO.puts("action declared by subchart!")
+
+        defmodule Subchart do
+          use Statechart
+
+          defchart do
+            on enter: &SubchartRootActionsBothLocalAndFromParent.action_entering_subchart/1
+          end
+        end
+
+        defchart do
+          :GOTO_FOO >>> :foo
+
+          subchart :foo, Subchart do
+            on enter: &__MODULE__.action_entering_foo/1
+          end
+
+          defstate :bar
+        end
+      end
+
+      captured_io =
+        ExUnit.CaptureIO.capture_io(fn ->
+          Transitions.transition(SubchartRootActionsBothLocalAndFromParent, :bar, :GOTO_FOO)
+        end)
+
+      assert captured_io =~ "declared by subchart!"
+      assert captured_io =~ "declared by parent!"
+    end
 
     test "actions registered on a subchart's root persist after being inserted into a parent chart" do
       defmodule SubchartRootHasActions do

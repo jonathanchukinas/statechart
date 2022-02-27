@@ -30,6 +30,7 @@ defmodule Statechart.Build do
   @build_steps ~w/
     insert_nodes
     insert_subcharts
+    insert_actions
     insert_transitions_and_defaults
     /a
 
@@ -202,9 +203,7 @@ defmodule Statechart.Build do
   end
 
   def __defstate_enter__(_build_step, env, _name, _ops) do
-    {:ok, node} = fetch_node_by_metadata(Acc.chart(env), Metadata.from_env(env))
-    Acc.push_current_id(env, Node.id(node))
-    :ok
+    __push_current_id__(env)
   end
 
   @doc false
@@ -241,7 +240,7 @@ defmodule Statechart.Build do
 
   @doc false
   @spec __action__(build_step, Macro.Env.t(), Node.action_type(), Node.action_fn()) :: :ok
-  def __action__(:insert_nodes, env, action_type, action_fn) do
+  def __action__(:insert_actions, env, action_type, action_fn) do
     chart = Acc.chart(env)
     current_id = Acc.current_id(env)
 
@@ -326,36 +325,67 @@ defmodule Statechart.Build do
   """
   defmacro subchart(name, module) do
     quote bind_quoted: [name: name, module: module] do
-      Build.__subchart__(@__sc_build_step__, __ENV__, name, module)
+      Build.subchart(name, module, do: nil)
     end
   end
 
-  def __subchart__(:insert_subcharts, env, name, module) do
+  defmacro subchart(name, module, do: block) do
+    quote do
+      Build.__subchart_enter__(@__sc_build_step__, __ENV__, unquote(name), unquote(module))
+      unquote(block)
+      Build.__pop_current_id__(__ENV__)
+    end
+  end
+
+  @spec __subchart_enter__(build_step, Macro.Env.t(), Node.name(), module) :: :ok
+  def __subchart_enter__(:insert_nodes, env, _name, _module) do
+    Acc.push_current_id(env, nil)
+  end
+
+  def __subchart_enter__(:insert_subcharts, env, name, module) do
     metadata = Metadata.from_env(env)
 
-    update_child_root = fn %Node{} = node ->
+    update_subchart_root = fn %Node{} = node ->
       %Node{node | name: name, metadata: metadata}
     end
 
-    with parent_chart = Acc.chart(env),
+    with chart = Acc.chart(env),
          parent_id = Acc.current_id(env),
-         :ok <- validate_name!(parent_chart, name),
-         child_chart <- fetch_chart!(module, Metadata.line(metadata)),
-         new_child_chart = update_root(child_chart, update_child_root),
-         {:ok, new_parent_chart} <-
-           insert(parent_chart, new_child_chart, parent_id) do
-      Acc.put_chart(env, new_parent_chart)
+         :ok <- validate_name!(chart, name),
+         subchart <- fetch_chart!(module, Metadata.line(metadata)),
+         new_subchart = update_root(subchart, update_subchart_root),
+         {:ok, new_chart} <-
+           insert(chart, new_subchart, parent_id) do
+      Acc.put_chart(env, new_chart)
+      __push_current_id__(env)
     end
 
     :ok
   end
 
-  def __subchart__(_build_step, _env, _name, _module) do
-    :ok
+  def __subchart_enter__(_build_step, env, _name, _module) do
+    __push_current_id__(env)
   end
+
+  # TODO test that calling defstate inside subchart raises
 
   #####################################
   # HELPERS
+
+  @doc false
+  @spec __push_current_id__(Macro.Env.t()) :: :ok
+  def __push_current_id__(env) do
+    {:ok, node} = fetch_node_by_metadata(Acc.chart(env), Metadata.from_env(env))
+
+    Acc.push_current_id(env, Node.id(node))
+  end
+
+  @doc false
+  @spec __pop_current_id__(Macro.Env.t()) :: :ok
+  def __pop_current_id__(env) do
+    _current_id = Acc.pop_id!(env)
+    :ok
+  end
 
   @doc false
   @spec validate_name!(Chart.t(), Node.name()) :: :ok | no_return

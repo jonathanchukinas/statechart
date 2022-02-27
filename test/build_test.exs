@@ -144,7 +144,7 @@ defmodule Statechart.BuildTest do
 
         defchart do
           defstate :flarb
-          subchart(:flazzl, SubChart)
+          subchart :flazzl, SubChart
         end
       end
 

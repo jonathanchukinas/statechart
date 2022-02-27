@@ -27,7 +27,7 @@ defmodule Statechart.Chart.Query do
   # REDUCERS
 
   @spec update_node_by_name(t, Node.name(), (Node.t() -> Node.t())) ::
-          {:ok, t} | {:error, :id_not_found | :name_not_found | :ambiguous_name}
+          {:ok, t} | {:error, :id_not_found | :name_not_found | :ambiguous_state_name}
   def update_node_by_name(chart, name, update_fn) do
     with {:ok, node} <- fetch_node_by_name(chart, name),
          {:ok, _chart} = result <- Tree.update_node_by_id(chart, Node.id(node), update_fn) do
@@ -67,16 +67,28 @@ defmodule Statechart.Chart.Query do
     end
   end
 
-  @spec fetch_node_by_name(t, atom) ::
-          {:ok, Node.t()} | {:error, :name_not_found} | {:error, :ambiguous_name}
-  def fetch_node_by_name(chart, name) when is_atom(name) do
-    chart
-    |> local_nodes()
-    |> Enum.filter(fn node -> Node.name(node) == name end)
-    |> case do
+  @doc """
+  Seek a node with a maching name.
+
+  `opts` supports the following:
+  - `search_subcharts` (default: `false`)
+  """
+  @spec fetch_node_by_name(t, atom, Keyword.t()) ::
+          {:ok, Node.t()} | {:error, :name_not_found} | {:error, :ambiguous_state_name}
+  def fetch_node_by_name(%Chart{nodes: nodes} = chart, name, opts \\ []) when is_atom(name) do
+    nodes =
+      if opts[:search_subcharts] do
+        nodes
+      else
+        local_nodes(chart)
+      end
+
+    name_matches = fn node -> Node.name(node) == name end
+
+    case Enum.filter(nodes, name_matches) do
       [%Node{} = node] -> {:ok, node}
       [] -> {:error, :name_not_found}
-      _ -> {:error, :ambiguous_name}
+      _ -> {:error, :ambiguous_state_name}
     end
   end
 
@@ -90,13 +102,15 @@ defmodule Statechart.Chart.Query do
     chart |> do_local_nodes |> Enum.filter(&(Node.name(&1) == name))
   end
 
-  @spec fetch_id_by_state(t, State.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
-  def fetch_id_by_state(chart, node_id) when is_integer(node_id) do
+  @spec fetch_id_by_state(t, State.t(), Keyword.t()) :: {:ok, Node.id()} | {:error, :id_not_found}
+  def fetch_id_by_state(chart, node_id, opts \\ [])
+
+  def fetch_id_by_state(chart, node_id, _opts) when is_integer(node_id) do
     if Tree.contains_id?(chart, node_id), do: {:ok, node_id}, else: {:error, :id_not_found}
   end
 
-  def fetch_id_by_state(chart, node_name) when is_atom(node_name) do
-    case fetch_node_by_name(chart, node_name) do
+  def fetch_id_by_state(chart, node_name, opts) when is_atom(node_name) do
+    case fetch_node_by_name(chart, node_name, opts) do
       {:ok, node} -> {:ok, Node.id(node)}
       {:error, _reason} = error -> error
     end

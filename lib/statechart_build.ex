@@ -29,8 +29,8 @@ defmodule Statechart.Build do
   # CONSIDER do transitions, default, and subcharts.. can they all go at the same time?
   @build_steps ~w/
     insert_nodes
-    insert_transitions_and_defaults
     insert_subcharts
+    insert_transitions_and_defaults
     /a
 
   @type build_step :: :insert_nodes | :insert_transitions_and_defaults | :insert_subcharts

@@ -74,6 +74,35 @@ defmodule Statechart.TransitionsTest do
       end
     end
 
+    test "add opt to defchart to create a new module"
+
+    test "transitioning from a non-unique state name will raise?" do
+      defmodule NonUniqueState do
+        defmodule SubchartWithRepeatName do
+          # TODO move this up?
+          use Statechart
+
+          defchart do
+            defstate :non_unique_name
+          end
+        end
+
+        use Statechart
+
+        defchart do
+          :SOME_EVENT >>> :bar
+          defstate :bar
+          defstate :non_unique_name
+          subchart(:foo, SubchartWithRepeatName)
+        end
+      end
+
+      assert {:error, :ambiguous_state_name} =
+               Transitions.transition(NonUniqueState, :non_unique_name, :SOME_EVENT)
+    end
+
+    test "subcharts inserted via defstate opts also work"
+
     test "a transition registered directly on current node allows a transition" do
       assert {:ok, :off} = Transitions.transition(SimpleToggle, :on, :TOGGLE)
     end

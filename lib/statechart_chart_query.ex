@@ -182,6 +182,15 @@ defmodule Statechart.Chart.Query do
     end
   end
 
+  # TODO make sure used
+  @spec validate_node_resolves(Chart.t(), Node.id()) :: :ok | {:error, :no_default_leaf}
+  def validate_node_resolves(chart, id) do
+    with {:ok, node} <- Tree.fetch_node_by_id(chart, id),
+         {:ok, _leaf_node} <- fetch_default_leaf_node(chart |> IO.inspect(), node) do
+      :ok
+    end
+  end
+
   def validate_target_id_is_descendent(chart, origin_id, target_id) do
     with {:ok, descendents} <- Tree.fetch_descendents_by_id(chart, origin_id),
          true <- target_id in Stream.map(descendents, &Node.id/1) do

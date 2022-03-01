@@ -32,7 +32,7 @@ defmodule Statechart.Metadata do
     alias Statechart.Metadata
 
     def inspect(%Metadata{} = metadata, _opts) do
-      "#{metadata.module}:#{metadata.line}"
+      "#{metadata.module |> Module.split() |> Enum.at(-1)}:#{metadata.line}"
     end
   end
 end

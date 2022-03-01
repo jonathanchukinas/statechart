@@ -31,4 +31,17 @@ defmodule Statechart.Event do
   def match?(event1, event2) do
     event1 == event2
   end
+
+  @spec pretty(registration) :: String.t()
+  def pretty(event) do
+    IO.inspect(event)
+
+    try do
+      event
+      |> Module.split()
+      |> Enum.at(-1)
+    rescue
+      _ -> to_string(event)
+    end
+  end
 end

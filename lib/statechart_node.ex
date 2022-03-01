@@ -155,13 +155,15 @@ defmodule Statechart.Node do
       Statechart.Util.Inspect.custom_kv("Node", fields, opts)
     end
 
-    defp standard_fields(node) do
+    defp standard_fields(%Node{transitions: t, actions: a, default: d} = node) do
       [
-        lft_rgt: {node.lft, node.rgt},
-        meta: node.metadata,
-        transitions: node.transitions,
-        actions: node.actions
+        {:lft_rgt, {node.lft, node.rgt}},
+        {:meta, node.metadata},
+        if(d, do: {:default, d}),
+        unless(t == [], do: {:transitions, t}),
+        unless(a == [], do: {:actions, a})
       ]
+      |> Enum.filter(& &1)
     end
   end
 end

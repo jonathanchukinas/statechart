@@ -1,6 +1,7 @@
 defmodule Statechart.Chart.Query do
   alias Statechart.Chart
   alias Statechart.Event
+  alias Statechart.HasIdRefs
   alias Statechart.Metadata
   alias Statechart.MetadataAccess
   alias Statechart.Node
@@ -34,6 +35,68 @@ defmodule Statechart.Chart.Query do
       result
     else
       {:error, _reason} = error -> error
+    end
+  end
+
+  @spec merge_subchart_at(t, t, Node.id()) :: {:ok, t} | {:error, :id_not_found}
+  def merge_subchart_at(chart, subchart, merge_node_id) do
+    subchart_root = Tree.root(subchart)
+    subchart_root_id = Node.id(subchart_root)
+
+    with {:ok, subchart_descendents} = Tree.fetch_descendents_by_id(subchart, subchart_root_id),
+         {:ok, chart} <-
+           Tree.update_node_by_id(chart, merge_node_id, &Node.merge(&1, subchart_root)),
+         {:ok, merge_node} <- Tree.fetch_node_by_id(chart, merge_node_id) do
+      parent_rgt = Node.rgt(merge_node)
+
+      new_nodes =
+        (fn ->
+           old_nodes_addend_lft_rgt = 2 * length(subchart_descendents)
+           # TODO DRY some of this out
+           maybe_update_old_node = fn %Node{} = node, key ->
+             Node.update_if(node, key, &(&1 >= parent_rgt), &(&1 + old_nodes_addend_lft_rgt))
+           end
+
+           chart
+           |> Tree.fetch_nodes!()
+           |> Stream.map(&maybe_update_old_node.(&1, :lft))
+           |> Stream.map(&maybe_update_old_node.(&1, :rgt))
+         end).()
+
+      new_descendents =
+        case subchart_descendents do
+          [] ->
+            []
+
+          [first_descendent | _tail] ->
+            descendents_lft_rgt_addend = parent_rgt - Node.lft(first_descendent)
+
+            # TODO isn't there a better way?
+            descendents_min_id = Enum.min_by(subchart_descendents, &Node.id/1) |> Node.id()
+
+            starting_new_id = 1 + Tree.max_node_id(chart)
+            descendents_id_addend = starting_new_id - descendents_min_id
+
+            new_nodes_id_update = fn
+              ^subchart_root_id -> merge_node_id
+              id when is_integer(id) -> id + descendents_id_addend
+            end
+
+            Enum.map(subchart_descendents, fn %Node{} = node ->
+              node
+              |> Node.add_to_lft_rgt(descendents_lft_rgt_addend)
+              |> HasIdRefs.update_id_refs(new_nodes_id_update)
+            end)
+        end
+
+      nodes =
+        [new_nodes, new_descendents]
+        |> Stream.concat()
+        |> Enum.sort_by(&Node.lft/1)
+
+      {:ok, Tree.put_nodes(chart, nodes)}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 

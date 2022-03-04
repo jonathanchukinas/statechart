@@ -7,6 +7,7 @@ defmodule Statechart.Tree do
 
   # TODO move the above definitions to type and typedocs
 
+  alias Statechart.HasIdRefs
   alias Statechart.Node
   alias Statechart.Tree.Insertable
   alias Statechart.Tree.IsTree
@@ -65,7 +66,7 @@ defmodule Statechart.Tree do
         Enum.map(new_nodes, fn %Node{} = node ->
           node
           |> Node.add_to_lft_rgt(new_nodes_addend)
-          |> Statechart.HasIdRefs.incr_id_refs(0, starting_new_id - Insertable.min_id(insertable))
+          |> HasIdRefs.incr_id_refs(0, starting_new_id - Insertable.min_id(insertable))
         end)
 
       nodes =

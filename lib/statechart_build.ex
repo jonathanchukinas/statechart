@@ -148,6 +148,8 @@ defmodule Statechart.Build do
 
   @doc false
   @spec __defstate_enter__(build_step, Macro.Env.t(), Node.name(), Keyword.t()) :: :ok
+  def __defstate_enter__(build_step, env, name, opts \\ [])
+
   def __defstate_enter__(:insert_nodes = _build_step, env, name, _opts) do
     old_chart = Acc.chart(env)
     parent_id = Acc.current_id(env)
@@ -338,24 +340,19 @@ defmodule Statechart.Build do
   end
 
   @spec __subchart_enter__(build_step, Macro.Env.t(), Node.name(), module) :: :ok
-  def __subchart_enter__(:insert_nodes, env, _name, _module) do
-    Acc.push_current_id(env, nil)
+  def __subchart_enter__(:insert_nodes = build_step, env, name, _module) do
+    __defstate_enter__(build_step, env, name)
   end
 
-  def __subchart_enter__(:insert_subcharts, env, name, module) do
-    metadata = Metadata.from_env(env)
-
-    update_subchart_root = fn %Node{} = node ->
-      %Node{node | name: name, metadata: metadata}
-    end
+  def __subchart_enter__(:insert_subcharts, env, _name, module) do
+    meta = Metadata.from_env(env)
 
     with chart = Acc.chart(env),
-         parent_id = Acc.current_id(env),
-         :ok <- validate_name!(chart, name),
-         subchart <- fetch_chart!(module, Metadata.line(metadata)),
-         new_subchart = update_root(subchart, update_subchart_root),
-         {:ok, new_chart} <-
-           insert(chart, new_subchart, parent_id) do
+         {:ok, root_node} <- fetch_node_by_metadata(chart, meta),
+         # TODO use a normal fetch?
+         # TODO test for raise on invalid module
+         subchart <- fetch_chart!(module, Metadata.line(meta)),
+         {:ok, new_chart} <- merge_subchart_at(chart, subchart, Node.id(root_node)) do
       Acc.put_chart(env, new_chart)
       __push_current_id__(env)
     end

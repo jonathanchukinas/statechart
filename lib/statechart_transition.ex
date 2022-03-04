@@ -1,9 +1,11 @@
 defmodule Statechart.Transition do
   use Statechart.Util.GetterStruct
   alias __MODULE__
+  alias Statechart.HasIdRefs
   alias Statechart.Node
   alias Statechart.Event
   alias Statechart.Metadata
+  alias Statechart.Metadata.HasMetadata
 
   getter_struct do
     field :event, Event.registation()
@@ -27,7 +29,7 @@ defmodule Statechart.Transition do
     end
   end
 
-  defimpl Statechart.Metadata.HasMetadata do
+  defimpl HasMetadata do
     def fetch(%Transition{metadata: metadata}) do
       case metadata do
         %Metadata{} -> {:ok, metadata}
@@ -36,13 +38,18 @@ defmodule Statechart.Transition do
     end
   end
 
-  defimpl Statechart.HasIdRefs do
+  defimpl HasIdRefs do
     def incr_id_refs(%Transition{target_id: id} = transition, start_id, addend) do
+      # TODO update to call update_id_refs/2
       if start_id <= id do
         Map.update!(transition, :target_id, &(&1 + addend))
       else
         transition
       end
+    end
+
+    def update_id_refs(%Transition{target_id: id} = transition, fun) do
+      %Transition{transition | target_id: fun.(id)}
     end
   end
 end

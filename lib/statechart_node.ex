@@ -3,6 +3,7 @@ defmodule Statechart.Node do
   alias __MODULE__
   alias Statechart.Metadata
   alias Statechart.Transition
+  alias Statechart.HasIdRefs
 
   # @type id :: Statechart.HasIdRefs.id()
   @type id :: pos_integer
@@ -17,7 +18,7 @@ defmodule Statechart.Node do
     field :rgt, pos_integer, default: 1
     field :metadata, Metadata.t(), enforce: false
     field :transitions, [Transition.t()], default: []
-    field :default, id, enforce: nil
+    field :default, id, enforce: false
     field :actions, [{action_type, action_fn}], default: []
   end
 
@@ -51,6 +52,23 @@ defmodule Statechart.Node do
 
   #####################################
   # REDUCERS
+
+  @doc false
+  # Used when inserting a subchart into a parent tree.
+  # It's only meant to be called early in the build process,
+  # just after nodes have been added to the tree.
+  @spec merge(t, t) :: t
+  def merge(
+        %__MODULE__{default: nil, transitions: [], actions: []} = orig_node,
+        %__MODULE__{} = updating_node
+      ) do
+    %__MODULE__{
+      orig_node
+      | transitions: updating_node.transitions,
+        default: updating_node.default,
+        actions: updating_node.actions
+    }
+  end
 
   @spec update_if(t, :lft | :rgt, (t -> boolean), (integer -> integer)) :: t
   def update_if(%__MODULE__{} = node, key, if_fn, update_fn) do
@@ -124,8 +142,9 @@ defmodule Statechart.Node do
     end
   end
 
-  defimpl Statechart.HasIdRefs do
+  defimpl HasIdRefs do
     def incr_id_refs(%Node{id: id} = node, start_id, addend) do
+      # TODO this should call update_id_refs
       id =
         if start_id <= id do
           id + addend
@@ -136,9 +155,18 @@ defmodule Statechart.Node do
       transitions =
         node
         |> Node.transitions()
-        |> Enum.map(&Statechart.HasIdRefs.incr_id_refs(&1, start_id, addend))
+        |> Enum.map(&HasIdRefs.incr_id_refs(&1, start_id, addend))
 
       %Node{node | id: id, transitions: transitions}
+    end
+
+    def update_id_refs(%Node{id: id, default: default, transitions: transitions} = node, fun) do
+      %Node{
+        node
+        | id: fun.(id),
+          default: if(default, do: fun.(default)),
+          transitions: Enum.map(transitions, &HasIdRefs.update_id_refs(&1, fun))
+      }
     end
   end
 

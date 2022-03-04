@@ -6,7 +6,7 @@ defmodule Statechart.TransitionsTest do
   defmodule Sample do
     use Statechart
 
-    defchart context_type: String.t() do
+    defchart do
       defstate :a do
         defstate :b do
           :GOTO_G >>> :g
@@ -52,7 +52,18 @@ defmodule Statechart.TransitionsTest do
 
   test "the builder raises on events that target a branch node that doesn't have a default path to a leaf node"
 
-  test "root can have a default"
+  test "root can have a default" do
+    defmodule RootHasDefault do
+      use Statechart
+
+      defchart default: :foo do
+        :GOTO_ROOT >>> :root
+        defstate :foo
+      end
+    end
+
+    assert {:ok, :foo} = Transitions.transition(RootHasDefault, :foo, :GOTO_ROOT)
+  end
 
   describe "transition/3" do
     defmodule SimpleToggle do

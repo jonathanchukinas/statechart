@@ -65,12 +65,22 @@ defmodule Statechart.Build do
 
       for build_step <- unquote(@build_steps) do
         @__sc_build_step__ build_step
+        Build.__root_update__(build_step, __ENV__, unquote(opts))
         unquote(block)
       end
 
       Build.__defchart_exit__(__ENV__)
       @before_compile unquote(__MODULE__)
     end
+  end
+
+  @doc false
+  def __root_update__(:insert_transitions_and_defaults = build_step, env, opts) do
+    __defstate_enter__(build_step, env, :root, opts)
+  end
+
+  def __root_update__(_build_step, _env, _opts) do
+    :ok
   end
 
   defmacro __before_compile__(env) do
@@ -107,6 +117,7 @@ defmodule Statechart.Build do
     end
 
     chart = Chart.from_env(env)
+    # TODO test for bad default input in defchart
     Module.register_attribute(env.module, :__sc_build_step__, [])
     Module.put_attribute(env.module, :__sc_defchart__, nil)
     Acc.put_new(env, chart)

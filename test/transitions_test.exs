@@ -27,44 +27,6 @@ defmodule Statechart.TransitionsTest do
     end
   end
 
-  # describe "fetch_transition_path/3" do
-  #   test "returns a list of exit/enter node tuples" do
-  #     {:ok, chart} = Chart.fetch(Sample)
-  #     {:ok, transition_path} = Transitions.fetch_transition_path(chart, :d, :GOTO_G)
-
-  #     transition_path_atoms =
-  #       for {direction, node} <- transition_path, do: {direction, Node.name(node)}
-
-  #     assert transition_path_atoms == [
-  #              {:exit, :d},
-  #              {:exit, :c},
-  #              {:exit, :b},
-  #              {:exit, :a},
-  #              {:enter, :e},
-  #              {:enter, :f},
-  #              {:enter, :g}
-  #            ]
-  #   end
-  # end
-
-  test "fetch_target_id/?"
-  test "an event targetting a branch node must provides a default path to a leaf node"
-
-  test "the builder raises on events that target a branch node that doesn't have a default path to a leaf node"
-
-  test "root can have a default" do
-    defmodule RootHasDefault do
-      use Statechart
-
-      defchart default: :foo do
-        :GOTO_ROOT >>> :root
-        defstate :foo
-      end
-    end
-
-    assert {:ok, :foo} = Transitions.transition(RootHasDefault, :foo, :GOTO_ROOT)
-  end
-
   describe "transition/3" do
     defmodule SimpleToggle do
       use Statechart
@@ -84,8 +46,6 @@ defmodule Statechart.TransitionsTest do
         end
       end
     end
-
-    test "add opt to defchart to create a new module"
 
     test "transitioning from a non-unique state name will raise?" do
       defmodule NonUniqueState do
@@ -111,8 +71,6 @@ defmodule Statechart.TransitionsTest do
       assert {:error, :ambiguous_state_name} =
                Transitions.transition(NonUniqueState, :non_unique_name, :SOME_EVENT)
     end
-
-    test "subcharts inserted via defstate opts also work"
 
     test "a transition registered directly on current node allows a transition" do
       assert {:ok, :off} = Transitions.transition(SimpleToggle, :on, :TOGGLE)
@@ -169,6 +127,19 @@ defmodule Statechart.TransitionsTest do
     test "fail: will return an error tuple if the branch node has no default leaf node" do
       assert {:error, :no_default_leaf} =
                Transitions.transition(DefaultsTest, :b, :GOTO_BRANCH_NO_DEFAULT)
+    end
+
+    test "root can have a default" do
+      defmodule RootHasDefault do
+        use Statechart
+
+        defchart default: :foo do
+          :GOTO_ROOT >>> :root
+          defstate :foo
+        end
+      end
+
+      assert {:ok, :foo} = Transitions.transition(RootHasDefault, :foo, :GOTO_ROOT)
     end
   end
 

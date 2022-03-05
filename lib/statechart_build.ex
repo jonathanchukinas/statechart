@@ -48,8 +48,18 @@ defmodule Statechart.Build do
   defmacro defchart(opts \\ [], do: block) do
     ast = Build.__defchart__(block, opts)
 
-    quote do
-      (fn -> unquote(ast) end).()
+    case opts[:module] do
+      nil ->
+        quote do
+          (fn -> unquote(ast) end).()
+        end
+
+      module ->
+        quote do
+          defmodule unquote(module) do
+            unquote(ast)
+          end
+        end
     end
   end
 

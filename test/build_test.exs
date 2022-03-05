@@ -2,7 +2,21 @@ defmodule Statechart.BuildTest do
   use ExUnit.Case
   use Statechart.Chart
 
+  use Statechart
+
+  # BuildTest chart:
+  defchart do
+  end
+
   describe "defchart/2" do
+    test "add opt to defchart to create a new module" do
+      use Statechart
+
+      defchart module: ChartDefinedViaOpts do
+        nil
+      end
+    end
+
     test "raises if defchart was already called in this module" do
       assert_raise StatechartBuildError, ~r/Only one defchart/, fn ->
         defmodule InvalidDoubleDefchart do
@@ -157,6 +171,9 @@ defmodule Statechart.BuildTest do
   # This should test for the line number
   # Should give suggestions for matching names ("Did you mean ...?")
   describe "transition/2 & >>>/2" do
+    test "an event targetting a branch node must provides a default path to a leaf node"
+
+    test "raises if event targets a root that doesn't resolve"
     # This should test for the line number
     test "raises a StatechartBuildError on invalid event names"
     test "raises if target does not resolve to a leaf node"
